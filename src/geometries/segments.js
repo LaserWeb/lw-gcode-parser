@@ -1,113 +1,15 @@
-function drawArc (aX, aY, aZ, endaZ, aRadius, aStartAngle, aEndAngle, aClockwise, plane) {
-  // console.log("drawArc:", aX, aY, aZ, aRadius, aStartAngle, aEndAngle, aClockwise)
-  var ac = new THREE.ArcCurve(aX, aY, aRadius, aStartAngle, aEndAngle, aClockwise)
-  // console.log("ac:", ac)
-  var acmat = new THREE.LineBasicMaterial({
-    color: 0x00aaff,
-    opacity: 0.5,
-    transparent: true
-  })
-  var acgeo = new THREE.Geometry()
-  var ctr = 0
-  var z = aZ
-  ac.getPoints(20).forEach(function (v) {
-    // console.log(v)
-    z = (((endaZ - aZ) / 20) * ctr) + aZ
-    acgeo.vertices.push(new THREE.Vector3(v.x, v.y, z))
-    ctr++
-  })
-  var aco = new THREE.Line(acgeo, acmat)
-  // aco.position.set(pArc.x, pArc.y, pArc.z)
-  // console.log("aco:", aco)
-  this.extraObjects[plane].push(aco)
-  return aco
-}
-
-function drawArcFrom2PtsAndCenter (vp1, vp2, vpArc, args) {
-  // console.log("drawArcFrom2PtsAndCenter. vp1:", vp1, "vp2:", vp2, "vpArc:", vpArc, "args:", args)
-
-  // var radius = vp1.distanceTo(vpArc)
-  // console.log("radius:", radius)
-
-  // Find angle
-  var p1deltaX = vpArc.x - vp1.x
-  var p1deltaY = vpArc.y - vp1.y
-  var p1deltaZ = vpArc.z - vp1.z
-
-  var p2deltaX = vpArc.x - vp2.x
-  var p2deltaY = vpArc.y - vp2.y
-  var p2deltaZ = vpArc.z - vp2.z
-
-  switch (args.plane) {
-    case 'G18':
-      var anglepArcp1 = Math.atan(p1deltaZ / p1deltaX)
-      var anglepArcp2 = Math.atan(p2deltaZ / p2deltaX)
-      break
-    case 'G19':
-      var anglepArcp1 = Math.atan(p1deltaZ / p1deltaY)
-      var anglepArcp2 = Math.atan(p2deltaZ / p2deltaY)
-      break
-    default:
-      var anglepArcp1 = Math.atan(p1deltaY / p1deltaX)
-      var anglepArcp2 = Math.atan(p2deltaY / p2deltaX)
-  }
-
-  // Draw arc from arc center
-  var radius = vpArc.distanceTo(vp1)
-  var radius2 = vpArc.distanceTo(vp2)
-  // console.log("radius:", radius)
-
-  if (Number((radius).toFixed(2)) != Number((radius2).toFixed(2))) console.log('Radiuses not equal. r1:', radius, ', r2:', radius2, ' with args:', args, ' rounded vals r1:', Number((radius).toFixed(2)), ', r2:', Number((radius2).toFixed(2)))
-
-  // arccurve
-  var clwise = true
-  if (args.clockwise === false) clwise = false
-  // if (anglepArcp1 < 0) clockwise = false
-
-  switch (args.plane) {
-    case 'G19':
-      if (p1deltaY >= 0) anglepArcp1 += Math.PI
-      if (p2deltaY >= 0) anglepArcp2 += Math.PI
-      break
-    default:
-      if (p1deltaX >= 0) anglepArcp1 += Math.PI
-      if (p2deltaX >= 0) anglepArcp2 += Math.PI
-  }
-
-  if (anglepArcp1 === anglepArcp2 && clwise === false)
-    // Draw full circle if angles are both zero,
-    // start & end points are same point... I think
-    switch (args.plane) {
-      case 'G18':
-        var threeObj = this.drawArc(vpArc.x, vpArc.z, (-1 * vp1.y), (-1 * vp2.y), radius, anglepArcp1, (anglepArcp2 + (2 * Math.PI)), clwise, 'G18')
-        break
-      case 'G19':
-        var threeObj = this.drawArc(vpArc.y, vpArc.z, vp1.x, vp2.x, radius, anglepArcp1, (anglepArcp2 + (2 * Math.PI)), clwise, 'G19')
-        break
-      default:
-        var threeObj = this.drawArc(vpArc.x, vpArc.y, vp1.z, vp2.z, radius, anglepArcp1, (anglepArcp2 + (2 * Math.PI)), clwise, 'G17')
-  }
-  else
-    switch (args.plane) {
-      case 'G18':
-        var threeObj = this.drawArc(vpArc.x, vpArc.z, (-1 * vp1.y), (-1 * vp2.y), radius, anglepArcp1, anglepArcp2, clwise, 'G18')
-        break
-      case 'G19':
-        var threeObj = this.drawArc(vpArc.y, vpArc.z, vp1.x, vp2.x, radius, anglepArcp1, anglepArcp2, clwise, 'G19')
-        break
-      default:
-        var threeObj = this.drawArc(vpArc.x, vpArc.y, vp1.z, vp2.z, radius, anglepArcp1, anglepArcp2, clwise, 'G17')
-  }
-  return threeObj
-}
+import {getLineGroup} from './foo'
 
 export function addSegment (p1, p2, args) {
   closeLineSegment()
+  let bbbox = []
+  let bbbox2 = []
+
   // console.log("")
   // console.log("addSegment p2:", p2)
   // add segment to array for later use
-  var group = getLineGroup(p2, args)
-  var geometry = group.geometry
+  let group = getLineGroup(p2, args)
+  let geometry = group.geometry
 
   group.segmentCount++
   // see if we need to draw an arc
@@ -120,12 +22,12 @@ export function addSegment (p1, p2, args) {
     // the start, the end, and the center of the arc circle
     // radius is dist from p1 x/y/z to pArc x/y/z
     // if(args.clockwise === false || args.cmd === "G3"){
-    //    var vp2 = new THREE.Vector3(p1.x, p1.y, p1.z)
-    //    var vp1 = new THREE.Vector3(p2.x, p2.y, p2.z)
+    //    var vp2 = [p1.x, p1.y, p1.z]
+    //    var vp1 = [p2.x, p2.y, p2.z]
     // }
     // else {
-    var vp1 = new THREE.Vector3(p1.x, p1.y, p1.z)
-    var vp2 = new THREE.Vector3(p2.x, p2.y, p2.z)
+    const vp1 = [p1.x, p1.y, p1.z]
+    const vp2 = [p2.x, p2.y, p2.z]
     // }
     var vpArc
 
@@ -135,18 +37,16 @@ export function addSegment (p1, p2, args) {
     if (args.r != null) {
       // console.log("looks like we have an arc with R specified. args:", args)
       // console.log("anglepArcp1:", anglepArcp1, "anglepArcp2:", anglepArcp2)
-
-      radius = parseFloat(args.r)
-
+      const radius = parseFloat(args.r)
       // First, find the distance between points 1 and 2.  We'll call that q,
       // and it's given by sqrt((x2-x1)^2 + (y2-y1)^2).
-      var q = Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2) + Math.pow(p2.z - p1.z, 2))
+      const q = Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2) + Math.pow(p2.z - p1.z, 2))
 
       // Second, find the point halfway between your two points.  We'll call it
       // (x3, y3).  x3 = (x1+x2)/2  and  y3 = (y1+y2)/2.
-      var x3 = (p1.x + p2.x) / 2
-      var y3 = (p1.y + p2.y) / 2
-      var z3 = (p1.z + p2.z) / 2
+      const x3 = (p1.x + p2.x) / 2
+      const y3 = (p1.y + p2.y) / 2
+      const z3 = (p1.z + p2.z) / 2
 
       // There will be two circle centers as a result of this, so
       // we will have to pick the correct one. In gcode we can get
@@ -157,10 +57,12 @@ export function addSegment (p1, p2, args) {
       // The other will be:
       // x = x3 - sqrt(r^2-(q/2)^2)*(y1-y2)/q
       // y = y3 - sqrt(r^2-(q/2)^2)*(x2-x1)/q
-      var pArc_1 = undefined
-      var pArc_2 = undefined
-      var calc = Math.sqrt((radius * radius) - Math.pow(q / 2, 2))
-      var angle_point = undefined
+      let pArc_1
+      let pArc_2
+      let calc = Math.sqrt((radius * radius) - Math.pow(q / 2, 2))
+      let angle_point
+      let cw
+      let ccw
 
       switch (args.plane) {
         case 'G18':
@@ -172,14 +74,15 @@ export function addSegment (p1, p2, args) {
             x: x3 - calc * (p1.z - p2.z) / q,
             y: y3 - calc * (p2.y - p1.y) / q,
           z: z3 - calc * (p2.x - p1.x) / q }
+
           angle_point = Math.atan2(p1.z, p1.x) - Math.atan2(p2.z, p2.x)
           if (((p1.x - pArc_1.x) * (p1.z + pArc_1.z)) + ((pArc_1.x - p2.x) * (pArc_1.z + p2.z)) >=
             ((p1.x - pArc_2.x) * (p1.z + pArc_2.z)) + ((pArc_2.x - p2.x) * (pArc_2.z + p2.z))) {
-            var cw = pArc_1
-            var ccw = pArc_2
+            cw = pArc_1
+            ccw = pArc_2
           } else {
-            var cw = pArc_2
-            var ccw = pArc_1
+            cw = pArc_2
+            ccw = pArc_1
           }
           break
         case 'G19':
@@ -194,11 +97,11 @@ export function addSegment (p1, p2, args) {
 
           if (((p1.y - pArc_1.y) * (p1.z + pArc_1.z)) + ((pArc_1.y - p2.y) * (pArc_1.z + p2.z)) >=
             ((p1.y - pArc_2.y) * (p1.z + pArc_2.z)) + ((pArc_2.y - p2.y) * (pArc_2.z + p2.z))) {
-            var cw = pArc_1
-            var ccw = pArc_2
+            cw = pArc_1
+            ccw = pArc_2
           } else {
-            var cw = pArc_2
-            var ccw = pArc_1
+            cw = pArc_2
+            ccw = pArc_1
           }
           break
         default:
@@ -212,16 +115,19 @@ export function addSegment (p1, p2, args) {
           z: z3 - calc * (p2.z - p1.z) / q }
           if (((p1.x - pArc_1.x) * (p1.y + pArc_1.y)) + ((pArc_1.x - p2.x) * (pArc_1.y + p2.y)) >=
             ((p1.x - pArc_2.x) * (p1.y + pArc_2.y)) + ((pArc_2.x - p2.x) * (pArc_2.y + p2.y))) {
-            var cw = pArc_1
-            var ccw = pArc_2
+            cw = pArc_1
+            ccw = pArc_2
           } else {
-            var cw = pArc_2
-            var ccw = pArc_1
+            cw = pArc_2
+            ccw = pArc_1
           }
       }
 
-      if ((p2.clockwise === true && radius >= 0) || (p2.clockwise === false && radius < 0)) vpArc = new THREE.Vector3(cw.x, cw.y, cw.z)
-      else vpArc = new THREE.Vector3(ccw.x, ccw.y, ccw.z)
+      if ((p2.clockwise === true && radius >= 0) || (p2.clockwise === false && radius < 0))
+      {
+        vpArc = [cw.x, cw.y, cw.z]
+      }
+      else vpArc = [ccw.x, ccw.y, ccw.z]
     } else {
       // this code deals with IJK gcode commands
       /*if(args.clockwise === false || args.cmd === "G3")
@@ -231,38 +137,34 @@ export function addSegment (p1, p2, args) {
         z: p2.arck ? p1.z + p2.arck : p1.z,
       ¨              }
         else*/
-      var pArc = {
+      const pArc = {
         x: p2.arci ? p1.x + p2.arci : p1.x,
         y: p2.arcj ? p1.y + p2.arcj : p1.y,
-        z: p2.arck ? p1.z + p2.arck : p1.z,
+        z: p2.arck ? p1.z + p2.arck : p1.z
       }
-      // console.log("new pArc:", pArc)
-      vpArc = new THREE.Vector3(pArc.x, pArc.y, pArc.z)
-    // console.log("vpArc:", vpArc)
+      vpArc = [pArc.x, pArc.y, pArc.z]
     }
 
-    var threeObjArc = this.drawArcFrom2PtsAndCenter(vp1, vp2, vpArc, args)
+    const threeObjArc = this.drawArcFrom2PtsAndCenter(vp1, vp2, vpArc, args)
 
     // still push the normal p1/p2 point for debug
     p2.g2 = true
     p2.threeObjArc = threeObjArc
-    group = this.getLineGroup(p2, args)
+    group = getLineGroup(p2, args)
   // these golden lines showing start/end of a g2 or g3 arc were confusing people
   // so hiding them for now. jlauer 8/15/15
   /*
     geometry = group.geometry
     geometry.vertices.push(
-    new THREE.Vector3(p1.x, p1.y, p1.z))
+    [p1.x, p1.y, p1.z])
     geometry.vertices.push(
-    new THREE.Vector3(p2.x, p2.y, p2.z))
+    [p2.x, p2.y, p2.z))
     geometry.colors.push(group.color)
     geometry.colors.push(group.color)
   */
   } else {
-    geometry.vertices.push(
-      new THREE.Vector3(p1.x, p1.y, p1.z))
-    geometry.vertices.push(
-      new THREE.Vector3(p2.x, p2.y, p2.z))
+    geometry.vertices.push([p1.x, p1.y, p1.z])
+    geometry.vertices.push([p2.x, p2.y, p2.z])
     geometry.colors.push(group.color)
     geometry.colors.push(group.color)
   }
@@ -298,10 +200,11 @@ export function addSegment (p1, p2, args) {
   bbbox2.max.y = Math.max(bbbox2.max.y, p2.y)
   bbbox2.max.z = Math.max(bbbox2.max.z, p2.z)
 
-  // NEW METHOD OF CREATING THREE.JS OBJECTS
-  // create new approach for three.js objects which is
-  // a unique object for each line of gcode, including g2/g3's
-  // make sure userData is good too
+  /* NEW METHOD OF CREATING OBJECTS
+  create new approach for objects which is
+  a unique object for each line of gcode, including g2/g3's
+  make sure userData is good too
+  */
   var gcodeObj
 
   if (p2.arc) {
@@ -309,7 +212,12 @@ export function addSegment (p1, p2, args) {
     gcodeObj = p2.threeObjArc
   } else {
     // make a line
-    var color = 0X0000ff
+    let color = 0X0000ff
+    /*const {extruding, g0, g2, arc} = p2
+    const colorMap = {
+      extruding: 0xff00ff,
+      g0: 0x00ff00
+    }*/
 
     if (p2.extruding) {
       color = 0xff00ff
@@ -326,13 +234,6 @@ export function addSegment (p1, p2, args) {
       opacity: 0.5,
       transparent: true
     })
-
-    // var geometry = new THREE.Geometry()
-    // geometry.vertices.push(
-    // new THREE.Vector3( p1.x, p1.y, p1.z ),
-    // ew THREE.Vector3( p2.x, p2.y, p2.z )
-    // )
-
     var line = new THREE.Line(geometry, material)
     gcodeObj = line
   }
@@ -343,7 +244,9 @@ export function addSegment (p1, p2, args) {
   // DISTANCE CALC
   // add distance so we can calc estimated time to run
   // see if arc
-  var dist = 0
+  let dist = 0
+  let a
+  let b
   if (p2.arc) {
     // calc dist of all lines
     // console.log("this is an arc to calc dist for. p2.threeObjArc:", p2.threeObjArc, "p2:", p2)
@@ -357,20 +260,23 @@ export function addSegment (p1, p2, args) {
     // console.log("tad2:", tad2)
 
     // just do straight line calc
-    var a = new THREE.Vector3(p1.x, p1.y, p1.z)
-    var b = new THREE.Vector3(p2.x, p2.y, p2.z)
-    var straightDist = a.distanceTo(b)
-
+    a = [p1.x, p1.y, p1.z]
+    b = [p2.x, p2.y, p2.z]
+    // const straightDist = a.distanceTo(b)
     // console.log("diff of straight line calc vs arc sum. straightDist:", straightDist)
-
     dist = tad2
   } else {
     // just do straight line calc
-    var a = new THREE.Vector3(p1.x, p1.y, p1.z)
-    var b = new THREE.Vector3(p2.x, p2.y, p2.z)
+    a = [p1.x, p1.y, p1.z]
+    b = [p2.x, p2.y, p2.z]
     dist = a.distanceTo(b)
   }
 
+  // Handle Laser Sxxx parameter
+  sv = args.s
+  // console.log(sv)
+
+  //time distance computation
   if (dist > 0) {
     totalDist += dist
   }
@@ -395,10 +301,6 @@ export function addSegment (p1, p2, args) {
     timeMinutes = timeMinutes * 1.32
   }
 
-  // Handle Laser Sxxx parameter
-  sv = args.s
-  // console.log(sv)
-
   totalTime += timeMinutes
 
   p2.feedrate = args.feedrate
@@ -410,6 +312,10 @@ export function addSegment (p1, p2, args) {
   // console.log('Total Time'+totalTime)
   totaltimemax += (timeMinutes * 60)
 // console.log("calculating distance. dist:", dist, "totalDist:", totalDist, "feedrate:", args.feedrate, "timeMinsToExecute:", timeMinutes, "totalTime:", totalTime, "p1:", p1, "p2:", p2, "args:", args)
+  return {
+    dist,
+    timeMinutes
+  }
 }
 
 export function addFakeSegment (args, lineObject, lastLine, lines) {
@@ -419,16 +325,16 @@ export function addFakeSegment (args, lineObject, lastLine, lines) {
     isFake: true,
     text: args.text,
     indx: args.indx,
-    isComment: arg.text.match(/^(;|\(|<)/)
+    isComment: args.text.match(/^(;|\(|<)/)
   }
   lines.push({
     p2: lastLine, // since this is fake, just use lastLine as xyz
-    'args': arg2
+    args: arg2
   })
 }
 
 export function addLineSegment (p1, p2, lineObject, lasermultiply, bufSize) {
-  var i = lineObject.nLines * 6
+  let i = lineObject.nLines * 6
   // lineObject.vertexBuf[i+0] = p1.x  // Vertices
   // lineObject.vertexBuf[i+1] = p1.y
   // lineObject.vertexBuf[i+2] = p1.z
@@ -490,23 +396,24 @@ export function addLineSegment (p1, p2, lineObject, lasermultiply, bufSize) {
 
   lineObject.nLines++
 
-  if (lineObject.nLines === bufSize)
+  if (lineObject.nLines === bufSize) {
     closeLineSegment(lineObject)
+  }
 
   const dist = Math.sqrt((p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y) + (p1.z - p2.z) * (p1.z - p2.z))
   // totalDist += dist
   // timeMinutes = dist / p2.f
   // totalTime += timeMinutes
   // totaltimemax = totalTime * 60
-
   return {
     dist
   }
 }
 
 export function closeLineSegment (lineObject) {
-  if (lineObject.nLines === 0)
+  if (lineObject.nLines === 0) {
     return
+  }
 
   const vertices = new Float32Array(6 * lineObject.nLines)
   const colors = new Float32Array(6 * lineObject.nLines)
@@ -516,10 +423,4 @@ export function closeLineSegment (lineObject) {
   const lines = {vertices, colors}
   lineObjects.add(lines) // Feed the objects to "object" in doChunk()
   lineObject.nLines = 0
-  /*var geometry = new THREE.BufferGeometry()
-
-  geometry.addAttribute('position', new THREE.BufferAttribute(vertices, 3))
-  geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3))
-
-  var lines = new THREE.Line(geometry, material)*/
 }
