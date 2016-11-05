@@ -5,4 +5,24 @@
 **/
 
 export default function makeGcodeStream (parameters = {}) {
+
+
+  /*
+
+  //main entry point !!
+  createObjectFromGCode(gcode, indxMax)
+    => handlers = {
+       gcode(G1 etc): function
+         => drawArc
+         => drawArcFrom2PtsAndCenter
+         => addSegment
+     }
+    =>GCodeParser(handlers)
+      =>parse
+        =>doChunk
+          =>parseLine
+
+
+          convertLineGeometryToBufferGeometry
+  */
 }
