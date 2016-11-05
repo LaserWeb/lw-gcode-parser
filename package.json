@@ -1,0 +1,42 @@
+{
+  "name": "lw-stl-parser",
+  "version": "0.0.1",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "http://github.com/LaserWeb/lw-gcode-parser.git"
+  },
+  "contributors": [
+    {
+      "name": "Mark 'kaosat-dev' Moissette",
+      "url": "http://www.kaosat.net/"
+    }
+  ],
+  "main": "src/index.js",
+  "module": "src/index.js",
+  "dependencies": {
+  },
+  "devDependencies": {
+    "ava": "0.16",
+    "babel-cli": "^6.6.5",
+    "babel-core": "^6.2.1",
+    "babel-preset-es2015": "^6.1.18",
+    "babel-register": "^6.16.3",
+    "babelify": "^7.2.0",
+    "browserify": "^13.0.0",
+    "budo": "^8.3.0"
+  },
+  "scripts": {
+    "test": "ava './test/**/*.spec.js' --require babel-register --verbose",
+    "build": "npm run build-srv && npm run build-brs",
+    "release": "npm run release-patch",
+    "release-patch": "git checkout master && npm run build; git commit -a -m 'chore(dist): built release/'; npm version patch && git push origin master --tags ",
+    "release-minor": "git checkout master && npm run build; git commit -a -m 'chore(dist): built release/'; npm version minor && git push origin master --tags ",
+    "release-major": "git checkout master && npm run build; git commit -a -m 'chore(dist): built release/'; npm version major && git push origin master --tags "
+  },
+  "browserify": {
+    "transform": [
+      "babelify"
+    ]
+  }
+}
