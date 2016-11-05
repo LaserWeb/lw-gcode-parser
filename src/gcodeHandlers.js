@@ -1,16 +1,20 @@
-import {absolute, delta} from './utils'
+import { absolute, delta } from './utils'
+import { addSegment, addLineSegment, addFakeSegment } from './parseFunctions'
 
-export default function makeHandlers(){
-
-  let state = {
+export default function makeHandlers (params) {
+  let state = {
     isUnitsMm: true,
     plane: undefined,
-    relative: true
+    relative: true,
+    offsetG92: {x: 0, y: 0, z: 0, a: 0, e: 0},
+    spotSizeG7: undefined,
+    dirG7: 0
   }
   const lasermultiply = 100
   const lineObject = {}
   const lastLine = undefined
-  //EEK !! var lasermultiply = $('#lasermultiply').val() || 100
+  const lines = undefined
+  // EEK !! var lasermultiply = $('#lasermultiply').val() || 100
 
   const handlers = {
     // set the g92 offsets for the parser - defaults to no offset
@@ -19,16 +23,16 @@ export default function makeHandlers(){
     // So, let's color it uniquely to indicate it's just a toolhead move.
     G0: function (args, indx) {
       const newLine = {
-        x: args.x !== undefined ? absolute(lastLine.x, args.x) + cofg.offsetG92.x : lastLine.x,
-        y: args.y !== undefined ? absolute(lastLine.y, args.y) + cofg.offsetG92.y : lastLine.y,
-        z: args.z !== undefined ? absolute(lastLine.z, args.z) + cofg.offsetG92.z : lastLine.z,
-        a: args.a !== undefined ? absolute(lastLine.a, args.a) + cofg.offsetG92.a : lastLine.a,
-        e: args.e !== undefined ? absolute(lastLine.e, args.e) + cofg.offsetG92.e : lastLine.e,
+        x: args.x !== undefined ? absolute(lastLine.x, args.x) + state.offsetG92.x : lastLine.x,
+        y: args.y !== undefined ? absolute(lastLine.y, args.y) + state.offsetG92.y : lastLine.y,
+        z: args.z !== undefined ? absolute(lastLine.z, args.z) + state.offsetG92.z : lastLine.z,
+        a: args.a !== undefined ? absolute(lastLine.a, args.a) + state.offsetG92.a : lastLine.a,
+        e: args.e !== undefined ? absolute(lastLine.e, args.e) + state.offsetG92.e : lastLine.e,
         f: args.f !== undefined ? args.f : lastLine.f,
         s: 100,
+        g0: true
       }
-      newLine.g0 = true
-      addLineSegment (lastLine, newLine, lineObject, lasermultiply)
+      addLineSegment(lastLine, newLine, lineObject, lasermultiply)
       lastLine = newLine
     },
     G1: function (args, indx) {
@@ -41,14 +45,15 @@ export default function makeHandlers(){
       // 22.4 mm.
 
       const newLine = {
-        x: args.x !== undefined ? absolute(lastLine.x, args.x) + cofg.offsetG92.x : lastLine.x,
-        y: args.y !== undefined ? absolute(lastLine.y, args.y) + cofg.offsetG92.y : lastLine.y,
-        z: args.z !== undefined ? absolute(lastLine.z, args.z) + cofg.offsetG92.z : lastLine.z,
-        a: args.a !== undefined ? absolute(lastLine.a, args.a) + cofg.offsetG92.a : lastLine.a,
-        e: args.e !== undefined ? absolute(lastLine.e, args.e) + cofg.offsetG92.e : lastLine.e,
+        x: args.x !== undefined ? absolute(lastLine.x, args.x) + state.offsetG92.x : lastLine.x,
+        y: args.y !== undefined ? absolute(lastLine.y, args.y) + state.offsetG92.y : lastLine.y,
+        z: args.z !== undefined ? absolute(lastLine.z, args.z) + state.offsetG92.z : lastLine.z,
+        a: args.a !== undefined ? absolute(lastLine.a, args.a) + state.offsetG92.a : lastLine.a,
+        e: args.e !== undefined ? absolute(lastLine.e, args.e) + state.offsetG92.e : lastLine.e,
         f: args.f !== undefined ? args.f : lastLine.f,
         s: args.s !== undefined ? args.s : lastLine.s,
         t: args.t !== undefined ? args.t : lastLine.t,
+        g1: true
       }
       /* layer change detection is or made by watching Z, it's made by
          watching when we extrude at a new Z position */
@@ -56,7 +61,6 @@ export default function makeHandlers(){
         newLine.extruding = delta(lastLine.e, newLine.e) > 0
         if (layer == undefined || newLine.z != layer.z) cofg.newLayer(newLine)
       }
-      newLine.g1 = true
       addLineSegment(lastLine, newLine, lineObject, lasermultiply)
       lastLine = newLine
     },
@@ -68,11 +72,11 @@ export default function makeHandlers(){
       args.plane = plane // set the plane for this command to whatever the current plane is
 
       const newLine = {
-        x: args.x !== undefined ? absolute(lastLine.x, args.x) + cofg.offsetG92.x : lastLine.x,
-        y: args.y !== undefined ? absolute(lastLine.y, args.y) + cofg.offsetG92.y : lastLine.y,
-        z: args.z !== undefined ? absolute(lastLine.z, args.z) + cofg.offsetG92.z : lastLine.z,
-        a: args.a !== undefined ? absolute(lastLine.a, args.a) + cofg.offsetG92.a : lastLine.a,
-        e: args.e !== undefined ? absolute(lastLine.e, args.e) + cofg.offsetG92.e : lastLine.e,
+        x: args.x !== undefined ? absolute(lastLine.x, args.x) + state.offsetG92.x : lastLine.x,
+        y: args.y !== undefined ? absolute(lastLine.y, args.y) + state.offsetG92.y : lastLine.y,
+        z: args.z !== undefined ? absolute(lastLine.z, args.z) + state.offsetG92.z : lastLine.z,
+        a: args.a !== undefined ? absolute(lastLine.a, args.a) + state.offsetG92.a : lastLine.a,
+        e: args.e !== undefined ? absolute(lastLine.e, args.e) + state.offsetG92.e : lastLine.e,
         f: args.f !== undefined ? args.f : lastLine.f,
         s: args.s !== undefined ? args.s : lastLine.s,
         t: args.t !== undefined ? args.t : lastLine.t,
@@ -84,8 +88,8 @@ export default function makeHandlers(){
         arc: true,
         clockwise: !args.clockwise ? true : args.clockwise // FIXME : always true ??
       }
-      //if (args.clockwise === false) newLine.clockwise = args.clockwise
-      cofg.addSegment(lastLine, newLine, args)
+      // if (args.clockwise === false) newLine.clockwise = args.clockwise
+      addSegment(lastLine, newLine, args)
       lastLine = newLine
     },
     G3: function (args, indx, gcp) {
@@ -96,11 +100,11 @@ export default function makeHandlers(){
       args.plane = plane // set the plane for this command to whatever the current plane is
 
       const newLine = {
-        x: args.x !== undefined ? absolute(lastLine.x, args.x) + cofg.offsetG92.x : lastLine.x,
-        y: args.y !== undefined ? absolute(lastLine.y, args.y) + cofg.offsetG92.y : lastLine.y,
-        z: args.z !== undefined ? absolute(lastLine.z, args.z) + cofg.offsetG92.z : lastLine.z,
-        a: args.a !== undefined ? absolute(lastLine.a, args.a) + cofg.offsetG92.a : lastLine.a,
-        e: args.e !== undefined ? absolute(lastLine.e, args.e) + cofg.offsetG92.e : lastLine.e,
+        x: args.x !== undefined ? absolute(lastLine.x, args.x) + state.offsetG92.x : lastLine.x,
+        y: args.y !== undefined ? absolute(lastLine.y, args.y) + state.offsetG92.y : lastLine.y,
+        z: args.z !== undefined ? absolute(lastLine.z, args.z) + state.offsetG92.z : lastLine.z,
+        a: args.a !== undefined ? absolute(lastLine.a, args.a) + state.offsetG92.a : lastLine.a,
+        e: args.e !== undefined ? absolute(lastLine.e, args.e) + state.offsetG92.e : lastLine.e,
         f: args.f !== undefined ? args.f : lastLine.f,
         s: args.s !== undefined ? args.s : lastLine.s,
         t: args.t !== undefined ? args.t : lastLine.t,
@@ -112,12 +116,10 @@ export default function makeHandlers(){
         arc: true,
         clockwise: !args.clockwise ? true : args.clockwise // FIXME : always true ??
       }
-      //if (args.clockwise === false) newLine.clockwise = args.clockwise
-      cofg.addSegment(lastLine, newLine, args)
+      // if (args.clockwise === false) newLine.clockwise = args.clockwise
+      addSegment(lastLine, newLine, args)
       lastLine = newLine
     },
-
-    dirG7: 0,
 
     G7: function (args, indx) {
       // Example: G7 L68 D//////sljasflsfagdxsd,.df9078rhfnxm (68 of em)
@@ -138,10 +140,11 @@ export default function makeHandlers(){
       var buf = atob(args.d)
 
       if (typeof args.dollar !== 'undefined') { // Move Y, change direction
-        this.dirG7 = args.dollar
+        state.dirG7 = args.dollar
+
         const newLine = {
           x: lastLine.x,
-          y: lastLine.y + cofg.spotSizeG7,
+          y: lastLine.y + state.spotSizeG7,
           z: lastLine.z,
           a: lastLine.a,
           e: lastLine.e,
@@ -156,7 +159,7 @@ export default function makeHandlers(){
       for (var i = 0; i < buf.length; i++) { // Process a base64-encoded chunk
         const intensity = 255 - buf.charCodeAt(i) // 255 - 0
         const newLine = {
-          x: lastLine.x + cofg.spotSizeG7 * (this.dirG7 == 1 ? 1 : -1),
+          x: lastLine.x + state.spotSizeG7 * (state.dirG7 === 1 ? 1 : -1),
           y: lastLine.y,
           z: lastLine.z,
           a: lastLine.a,
@@ -245,18 +248,18 @@ export default function makeHandlers(){
       // TODO: Only support E0
       var newLine = lastLine
 
-      cofg.offsetG92.x = (args.x !== undefined ? (args.x === 0 ? newLine.x : newLine.x - args.x) : 0)
-      cofg.offsetG92.y = (args.y !== undefined ? (args.y === 0 ? newLine.y : newLine.y - args.y) : 0)
-      cofg.offsetG92.z = (args.z !== undefined ? (args.z === 0 ? newLine.z : newLine.z - args.z) : 0)
-      cofg.offsetG92.a = (args.a !== undefined ? (args.a === 0 ? newLine.a : newLine.a - args.a) : 0)
-      cofg.offsetG92.e = (args.e !== undefined ? (args.e === 0 ? newLine.e : newLine.e - args.e) : 0)
+      state.offsetG92.x = (args.x !== undefined ? (args.x === 0 ? newLine.x : newLine.x - args.x) : 0)
+      state.offsetG92.y = (args.y !== undefined ? (args.y === 0 ? newLine.y : newLine.y - args.y) : 0)
+      state.offsetG92.z = (args.z !== undefined ? (args.z === 0 ? newLine.z : newLine.z - args.z) : 0)
+      state.offsetG92.a = (args.a !== undefined ? (args.a === 0 ? newLine.a : newLine.a - args.a) : 0)
+      state.offsetG92.e = (args.e !== undefined ? (args.e === 0 ? newLine.e : newLine.e - args.e) : 0)
 
       // newLine.x = args.x !== undefined ? args.x + newLine.x : newLine.x
       // newLine.y = args.y !== undefined ? args.y + newLine.y : newLine.y
       // newLine.z = args.z !== undefined ? args.z + newLine.z : newLine.z
       // newLine.e = args.e !== undefined ? args.e + newLine.e : newLine.e
 
-      // console.log("G92", lastLine, newLine, args, cofg.offsetG92)
+      // console.log("G92", lastLine, newLine, args, state.offsetG92)
 
       // lastLine = newLine
       addFakeSegment(args, lineObject, lastLine, lines)
@@ -289,7 +292,7 @@ export default function makeHandlers(){
       // M649: Laser options for Marlin
       //  M649 S<Intensity> R<Spotsize> B2
       // Intensity = lasermultiply?
-      if (typeof args.r !== 'undefined') { cofg.spotSizeG7 = args.r;}
+      if (typeof args.r !== 'undefined') { state.spotSizeG7 = args.r}
     },
 
     // Dual Head 3D Printing Support
@@ -311,4 +314,6 @@ export default function makeHandlers(){
       addFakeSegment(args, lineObject, lastLine, lines)
     }
   }
+
+  return handlers
 }
