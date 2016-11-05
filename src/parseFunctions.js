@@ -1,4 +1,4 @@
-function drawArc(aX, aY, aZ, endaZ, aRadius, aStartAngle, aEndAngle, aClockwise, plane) {
+function drawArc (aX, aY, aZ, endaZ, aRadius, aStartAngle, aEndAngle, aClockwise, plane) {
   // console.log("drawArc:", aX, aY, aZ, aRadius, aStartAngle, aEndAngle, aClockwise)
   var ac = new THREE.ArcCurve(aX, aY, aRadius, aStartAngle, aEndAngle, aClockwise)
   // console.log("ac:", ac)
@@ -22,7 +22,6 @@ function drawArc(aX, aY, aZ, endaZ, aRadius, aStartAngle, aEndAngle, aClockwise,
   this.extraObjects[plane].push(aco)
   return aco
 }
-
 
 function drawArcFrom2PtsAndCenter (vp1, vp2, vpArc, args) {
   // console.log("drawArcFrom2PtsAndCenter. vp1:", vp1, "vp2:", vp2, "vpArc:", vpArc, "args:", args)
@@ -102,7 +101,7 @@ function drawArcFrom2PtsAndCenter (vp1, vp2, vpArc, args) {
   return threeObj
 }
 
-function addSegment (p1, p2, args) {
+export function addSegment (p1, p2, args) {
   closeLineSegment()
   // console.log("")
   // console.log("addSegment p2:", p2)
@@ -230,7 +229,7 @@ function addSegment (p1, p2, args) {
         x: p2.arci ? p1.x + p2.arci : p1.x,
         y: p2.arcj ? p1.y + p2.arcj : p1.y,
         z: p2.arck ? p1.z + p2.arck : p1.z,
-    ¨              }
+      ¨              }
         else*/
       var pArc = {
         x: p2.arci ? p1.x + p2.arci : p1.x,
@@ -413,7 +412,22 @@ function addSegment (p1, p2, args) {
 // console.log("calculating distance. dist:", dist, "totalDist:", totalDist, "feedrate:", args.feedrate, "timeMinsToExecute:", timeMinutes, "totalTime:", totalTime, "p1:", p1, "p2:", p2, "args:", args)
 }
 
-function addLineSegment (p1, p2) {
+export function addFakeSegment (args, lineObject, lastLine, lines) {
+  closeLineSegment(lineObject)
+  // line.args = args
+  const arg2 = {
+    isFake: true,
+    text: args.text,
+    indx: args.indx,
+    isComment: arg.text.match(/^(;|\(|<)/)
+  }
+  lines.push({
+    p2: lastLine, // since this is fake, just use lastLine as xyz
+    'args': arg2
+  })
+}
+
+export function addLineSegment (p1, p2, lineObject, lasermultiply, bufSize) {
   var i = lineObject.nLines * 6
   // lineObject.vertexBuf[i+0] = p1.x  // Vertices
   // lineObject.vertexBuf[i+1] = p1.y
@@ -422,11 +436,11 @@ function addLineSegment (p1, p2) {
   // lineObject.vertexBuf[i+4] = p2.y
   // lineObject.vertexBuf[i+5] = p2.z
 
-  if (p1.a != 0 || p2.a != 0) { // A axis: rotate around X
+  if (p1.a !== 0 || p2.a !== 0) { // A axis: rotate around X
     var R1 = Math.sqrt(p1.y * p1.y + p1.z * p1.z)
     var R2 = Math.sqrt(p2.y * p2.y + p2.z * p2.z)
-    var a1 = p1.y == 0 ? Math.sign(p1.z) * 90 : Math.atan2(p1.z, p1.y) * 180.0 / Math.PI
-    var a2 = p2.y == 0 ? Math.sign(p2.z) * 90 : Math.atan2(p2.z, p2.y) * 180.0 / Math.PI
+    var a1 = p1.y === 0 ? Math.sign(p1.z) * 90 : Math.atan2(p1.z, p1.y) * 180.0 / Math.PI
+    var a2 = p2.y === 0 ? Math.sign(p2.z) * 90 : Math.atan2(p2.z, p2.y) * 180.0 / Math.PI
     lineObject.vertexBuf[i + 0] = p1.x
     lineObject.vertexBuf[i + 1] = R1 * Math.cos((-p1.a + a1) * Math.PI / 180.0)
     lineObject.vertexBuf[i + 2] = R1 * Math.sin((-p1.a + a1) * Math.PI / 180.0)
@@ -451,15 +465,8 @@ function addLineSegment (p1, p2) {
   }
   // console.log("Segment " + p1)
 
-  var dist = Math.sqrt((p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y) + (p1.z - p2.z) * (p1.z - p2.z))
-  totalDist += dist
-  timeMinutes = dist / p2.f
-  totalTime += timeMinutes
-  totaltimemax = totalTime * 60
-
   var col
   var intensity
-  var lasermultiply = $('#lasermultiply').val() || 100
   if (p2.g0) { // g0
     col = {r: 0, g: 1, b: 0}
     intensity = 1.0 - p2.s / lasermultiply // lasermultiply
@@ -483,43 +490,36 @@ function addLineSegment (p1, p2) {
 
   lineObject.nLines++
 
-  if (lineObject.nLines == bufSize)
-    closeLineSegment()
+  if (lineObject.nLines === bufSize)
+    closeLineSegment(lineObject)
+
+  const dist = Math.sqrt((p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y) + (p1.z - p2.z) * (p1.z - p2.z))
+  // totalDist += dist
+  // timeMinutes = dist / p2.f
+  // totalTime += timeMinutes
+  // totaltimemax = totalTime * 60
+
+  return {
+    dist
+  }
 }
 
-
-function closeLineSegment () {
-  if (lineObject.nLines == 0)
+export function closeLineSegment (lineObject) {
+  if (lineObject.nLines === 0)
     return
 
-  var vertices = new Float32Array(6 * lineObject.nLines)
-  var colors = new Float32Array(6 * lineObject.nLines)
+  const vertices = new Float32Array(6 * lineObject.nLines)
+  const colors = new Float32Array(6 * lineObject.nLines)
   vertices.set(lineObject.vertexBuf.subarray(0, lineObject.nLines * 6))
   colors.set(lineObject.colorBuf.subarray(0, lineObject.nLines * 6))
 
-  var geometry = new THREE.BufferGeometry()
+  const lines = {vertices, colors}
+  lineObjects.add(lines) // Feed the objects to "object" in doChunk()
+  lineObject.nLines = 0
+  /*var geometry = new THREE.BufferGeometry()
 
   geometry.addAttribute('position', new THREE.BufferAttribute(vertices, 3))
   geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3))
 
-  var lines = new THREE.Line(geometry, material)
-  lineObjects.add(lines); // Feed the objects to "object" in doChunk()
-
-  lineObject.nLines = 0
-}
-
-
-function addFakeSegment(args) {
-  closeLineSegment()
-  // line.args = args
-  var arg2 = {
-    isFake: true,
-    text: args.text,
-    indx: args.indx
-  }
-  if (arg2.text.match(/^(;|\(|<)/)) arg2.isComment = true
-  lines.push({
-    p2: lastLine, // since this is fake, just use lastLine as xyz
-    'args': arg2
-  })
+  var lines = new THREE.Line(geometry, material)*/
 }

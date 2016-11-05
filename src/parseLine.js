@@ -1,4 +1,4 @@
-export function parseLine (text, info) {
+export function parseLine (text, info, handlers) {
   // console.log('Parsing: ',text)
   const origtext = text
 
@@ -24,6 +24,7 @@ export function parseLine (text, info) {
       text = text.replace(/\(.*?\)/g, '')
   }
 
+  //after this , more tokenizing/ calling handlers
   if (text && !isComment) {
     if (!isG7)
       text = text.replace(/(;|\().*$/, ''); // strip off end of line comment ; or () trailing
@@ -122,7 +123,6 @@ export function parseLine (text, info) {
       'indx': info,
       'isComment': isComment
     }
-    var handler = handlers['default']
-    return handler(args, info, this)
+    return handlers['default'](args, info, this)
   }
 }
