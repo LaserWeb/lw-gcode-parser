@@ -1,9 +1,15 @@
 export function parseLine (text, info, handlers) {
   // console.log('Parsing: ',text)
+  let lastArgs = {
+    cmd: undefined
+  }
+  const state = {
+    isUnitsMm: true
+  }
   const origtext = text
 
   if (text.match(/^N/i)) { // remove line numbers if exist
-    text = text.replace(/^N\d+\s*/ig, '')// yes, there's a line num
+    text = text.replace(/^N\d+\s*/ig, '') // yes, there's a line num
   }
 
   const isG7 = text.match(/^G7/) // Is is G7 raster command?
@@ -20,15 +26,16 @@ export function parseLine (text, info, handlers) {
     text = origtext
     isComment = true
   } else { // make sure to remove inline comments
-    if (!isG7)
+    if (!isG7) {
       text = text.replace(/\(.*?\)/g, '')
+    }
   }
 
-  //after this , more tokenizing/ calling handlers
+  // after this , more tokenizing/ calling handlers
   if (text && !isComment) {
-    if (!isG7)
-      text = text.replace(/(;|\().*$/, ''); // strip off end of line comment ; or () trailing
-
+    if (!isG7) {
+      text = text.replace(/(;|\().*$/, '') // strip off end of line comment ; or () trailing
+    }
     let tokens = text.split(/\s+/)
     if (tokens) {
       var cmd = tokens[0] // check if a g or m cmd was included in gcode line
@@ -37,7 +44,7 @@ export function parseLine (text, info, handlers) {
       // cmd is what's assumed
       isComment = false
       if (!cmd.match(/^(G|M|T)/i)) {
-        cmd = this.lastArgs.cmd // we need to use the last gcode cmd
+        cmd = lastArgs.cmd // we need to use the last gcode cmd
         tokens.unshift(cmd) // put at spot 0 in array
       } else {
         // we have a normal cmd as opposed to just an xyz pos where
@@ -57,16 +64,17 @@ export function parseLine (text, info, handlers) {
       if (tokens.length > 1 && !isComment) {
         tokens.splice(1).forEach(function (token) {
           if (token && token.length > 0) {
-            var key = token[0].toLowerCase()
+            let key = token[0].toLowerCase()
+            let value
             if (!isG7) {
-              var value = parseFloat(token.substring(1))
+              value = parseFloat(token.substring(1))
               if (isNaN(value)) {
                 value = 0
               }
               args[key] = value
             } else { // Special treatment for G7 with D-data
-              if (key == '$') key = 'dollar' // '$' doesn't work so well, use 'dollar'
-              var value = token.substring(1) // Don't convert values to float, need the D-data
+              if (key === '$') key = 'dollar' // '$' doesn't work so well, use 'dollar'
+              value = token.substring(1) // Don't convert values to float, need the D-data
               args[key] = value
             }
           } else {
@@ -88,14 +96,14 @@ export function parseLine (text, info, handlers) {
         // of the line.
         if (args.text.match(/\bG20\b/i)) {
           console.log('SETTING UNITS TO INCHES from pre-parser!!!')
-          this.isUnitsMm = false // false means inches cuz default is mm
+          state.isUnitsMm = false // false means inches cuz default is mm
         } else if (args.text.match(/\bG21\b/i)) {
           console.log('SETTING UNITS TO MM!!! from pre-parser')
-          this.isUnitsMm = true // true means mm
+          state.isUnitsMm = true // true means mm
         }
 
         if (args.text.match(/F([\d.]+)/i)) { // scan for feedrate
-          var feedrate = parseFloat(RegExp.$1) // we have a new feedrate
+          const feedrate = parseFloat(RegExp.$1) // we have a new feedrate
           args.feedrate = feedrate
           this.lastFeedrate = feedrate
         } else {

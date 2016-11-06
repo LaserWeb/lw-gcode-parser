@@ -8,8 +8,7 @@
 
 // This is a simplified and updated version of http://gcode.joewalnes.com/ that works with the latest version of Three.js (v68).
 // Updated with code from http://chilipeppr.com/tinyg's 3D viewer to support more CNC type Gcode
-var totaltimemax = ''
-totaltimemax = 0
+
 
 var lineObjects = new THREE.Object3D()
 lineObjects.name = 'LineObjects'

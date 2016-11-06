@@ -1,7 +1,7 @@
 import {getLineGroup} from './foo'
 
-export function addSegment (p1, p2, args) {
-  closeLineSegment()
+export function addSegment (p1, p2, args, lineObject) {
+  closeLineSegment(lineObject)
   let bbbox = []
   let bbbox2 = []
 
