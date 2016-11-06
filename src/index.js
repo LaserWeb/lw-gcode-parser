@@ -1,14 +1,13 @@
 /**
  * @author kaosat-dev / https://github.com/kaosat-dev
+ * @author kaosat-dev / https://github.com/kaosat-dev
  *
- * Description: A gcode parser for STL ASCII files & BINARY,
+ * Description: A gcode parser,
 **/
 
 export default function makeGcodeStream (parameters = {}) {
-
-
   /*
-
+  OLD code structure , for reference !
   //main entry point !!
   createObjectFromGCode(gcode, indxMax)
     => handlers = {
@@ -21,8 +20,7 @@ export default function makeGcodeStream (parameters = {}) {
       =>parse
         =>doChunk
           =>parseLine
-
-
           convertLineGeometryToBufferGeometry
   */
+  
 }
