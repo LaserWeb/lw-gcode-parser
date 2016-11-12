@@ -12,8 +12,8 @@ export default function makeHandlers (params) {
   }
   const lasermultiply = 100
   const lineObject = {}
-  const lastLine = undefined
-  const lines = undefined
+  let lastLine = undefined
+  let lines = undefined
   // EEK !! var lasermultiply = $('#lasermultiply').val() || 100
 
   const handlers = {
@@ -21,7 +21,7 @@ export default function makeHandlers (params) {
     // When doing CNC, generally G0 just moves to a new location
     // as fast as possible which means no milling or extruding is happening in G0.
     // So, let's color it uniquely to indicate it's just a toolhead move.
-    G0: function (args, indx) {
+    G0: function (args, index) {
       const newLine = {
         x: args.x !== undefined ? absolute(lastLine.x, args.x) + state.offsetG92.x : lastLine.x,
         y: args.y !== undefined ? absolute(lastLine.y, args.y) + state.offsetG92.y : lastLine.y,
@@ -35,7 +35,7 @@ export default function makeHandlers (params) {
       addLineSegment(lastLine, newLine, lineObject, lasermultiply)
       lastLine = newLine
     },
-    G1: function (args, indx) {
+    G1: function (args, index) {
       // Example: G1 Z1.0 F3000
       //          G1 X99.9948 Y80.0611 Z15.0 F1500.0 E981.64869
       //          G1 E104.25841 F1800.0
@@ -64,7 +64,7 @@ export default function makeHandlers (params) {
       addLineSegment(lastLine, newLine, lineObject, lasermultiply)
       lastLine = newLine
     },
-    G2: function (args, indx, gcp) {
+    G2: function (args, index, gcp) {
       // this is an arc move from lastLine's xy to the new xy. we'll
       // show it as a light gray line, but we'll also sub-render the
       // arc itself by figuring out the sub-segments
@@ -92,7 +92,7 @@ export default function makeHandlers (params) {
       addSegment(lastLine, newLine, args)
       lastLine = newLine
     },
-    G3: function (args, indx, gcp) {
+    G3: function (args, index, gcp) {
       // this is an arc move from lastLine's xy to the new xy. same
       // as G2 but reverse
       args.arc = true
@@ -121,7 +121,7 @@ export default function makeHandlers (params) {
       lastLine = newLine
     },
 
-    G7: function (args, indx) {
+    G7: function (args, index) {
       // Example: G7 L68 D//////sljasflsfagdxsd,.df9078rhfnxm (68 of em)
       //          G7 $1 L4 DAAA=
       //          G7 $0 L4 D2312
@@ -212,7 +212,7 @@ export default function makeHandlers (params) {
       addFakeSegment(args, lineObject, lastLine, lines)
     },
 
-    G73: function (args, indx, gcp) {
+    G73: function (args, index, gcp) {
       // peck drilling. just treat as g1
       console.log('G73 gcp:', gcp)
       gcp.handlers.G1(args)

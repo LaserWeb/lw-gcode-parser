@@ -16,15 +16,9 @@ lineObjects.name = 'LineObjects'
 function GCodeParser (handlers) {
   handlers = handlers || {}
 
-  lastArgs = {cmd: null}
-  lastFeedrate = null
-  isUnitsMm = true
 }
-colorG0: 0x00ff00
-colorG1: 0x0000ff
-colorG2: 0x999900
 
-  var bufSize = 10000; // Arbitrary - play around with!
+
   var lineObject = {active: false,
     vertexBuf: new Float32Array(6 * bufSize), // Start with bufSize line segments
     colorBuf: new Float32Array(6 * bufSize), // Start with bufSize line segments
@@ -35,9 +29,3 @@ colorG2: 0x999900
     transparent: true,
     linewidth: 1,
   })
-  totalDist = 0
-  totalTime = 0
-  var relative = false
-  var tool = null
-  var cofg = this
-  //parser = new GCodeParser(

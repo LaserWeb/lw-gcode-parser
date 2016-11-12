@@ -1,4 +1,4 @@
-function drawobject () {
+export default function drawobject () {
   var newObject = false
   // console.log("INSIDE DRAWOBJECT")
   // set what units we're using in the gcode

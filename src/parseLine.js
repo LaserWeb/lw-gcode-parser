@@ -1,11 +1,5 @@
-export function parseLine (text, info, handlers) {
-  // console.log('Parsing: ',text)
-  let lastArgs = {
-    cmd: undefined
-  }
-  const state = {
-    isUnitsMm: true
-  }
+export default function parseLine (text, index, state, handlers) {
+  console.log('Parsing: ', text)
   const origtext = text
 
   if (text.match(/^N/i)) { // remove line numbers if exist
@@ -13,36 +7,60 @@ export function parseLine (text, info, handlers) {
   }
 
   const isG7 = text.match(/^G7/) // Is is G7 raster command?
-  if (!isG7) { // G7 D-data need to be untouched
-    text = text.replace(/G00/i, 'G0') // collapse leading zero g cmds to no leading zero
-    text = text.replace(/G0(\d)/i, 'G$1') // add spaces before g cmds and xyzabcijkf params
-    text = text.replace(/([gmtxyzabcijkfst])/ig, ' $1') // remove spaces after xyzabcijkf params because a number should be directly after them
-    text = text.replace(/([xyzabcijkfst])\s+/ig, '$1') // remove front and trailing space
-  }
+  const baseParse = isG7 ? parseRaster(text, origtext) : parseDefault(text, origtext)
+  const isComment = baseParse.isComment
+  text = baseParse.text
+
+  return generateArgs(state, text, origtext, index, isComment, isG7)
+}
+
+function parseDefault (text, origtext) {
+  let isComment = false
+
+  text = text.replace(/G00/i, 'G0') // collapse leading zero g cmds to no leading zero
+  text = text.replace(/G0(\d)/i, 'G$1') // add spaces before g cmds and xyzabcijkf params
+  text = text.replace(/([gmtxyzabcijkfst])/ig, ' $1') // remove spaces after xyzabcijkf params because a number should be directly after them
+  text = text.replace(/([xyzabcijkfst])\s+/ig, '$1') // remove front and trailing space
   text = text.trim()
 
-  let isComment = false
   if (text.match(/^(;|\(|<)/)) { // see if comment
     text = origtext
     isComment = true
-  } else { // make sure to remove inline comments
-    if (!isG7) {
-      text = text.replace(/\(.*?\)/g, '')
-    }
+  } else {
+    text = text.replace(/\(.*?\)/g, '')
   }
 
-  // after this , more tokenizing/ calling handlers
+  text = text.replace(/(;|\().*$/, '') // strip off end of line comment ; or () trailing
+
+  return {text, isComment}
+}
+
+function parseRaster (text, origtext) {
+  let isComment = false
+  text = text.trim()
+  if (text.match(/^(;|\(|<)/)) { // see if comment
+    text = origtext
+    isComment = true
+  }
+  return {text, isComment}
+}
+
+function generateArgs (state, text, origtext, index, isComment, isG7) {
+  let {lastArgs} = state
+  let args = { // defaults to an empty/comment line args
+    cmd: 'empty or comment',
+    text,
+    origtext,
+    index,
+  isComment}
+
   if (text && !isComment) {
-    if (!isG7) {
-      text = text.replace(/(;|\().*$/, '') // strip off end of line comment ; or () trailing
-    }
     let tokens = text.split(/\s+/)
     if (tokens) {
-      var cmd = tokens[0] // check if a g or m cmd was included in gcode line
-      cmd = cmd.toUpperCase() // you are allowed to just specify coords on a line
+      let cmd = tokens[0].toUpperCase() // check if a g or m cmd was included in gcode line
+      // you are allowed to just specify coords on a line
       // and it should be assumed that the last specified gcode
       // cmd is what's assumed
-      isComment = false
       if (!cmd.match(/^(G|M|T)/i)) {
         cmd = lastArgs.cmd // we need to use the last gcode cmd
         tokens.unshift(cmd) // put at spot 0 in array
@@ -51,17 +69,18 @@ export function parseLine (text, info, handlers) {
         // it assumes you should use the last cmd
         // however, need to remove inline comments (TODO. it seems parser works fine for now)
       }
-      const args = {
-        'cmd': cmd,
-        'text': text,
-        'origtext': origtext,
-        'indx': info,
-        'isComment': isComment,
-        'feedrate': null,
-        'plane': undefined
+
+      args = {
+        cmd,
+        text,
+        origtext,
+        index,
+        isComment,
+        feedrate: null,
+        plane: undefined
       }
 
-      if (tokens.length > 1 && !isComment) {
+      if (tokens.length > 1) {
         tokens.splice(1).forEach(function (token) {
           if (token && token.length > 0) {
             let key = token[0].toLowerCase()
@@ -82,55 +101,52 @@ export function parseLine (text, info, handlers) {
           }
         })
       }
-      let handler = handlers[cmd] || handlers['default']
 
       if (!args.isComment) { // don't save if saw a comment
-        lastArgs = args
-      }
-
-      if (handler) {
-        // do extra check here for units. units are
-        // specified via G20 or G21. We need to scan
-        // each line to see if it's inside the line because
-        // we were only catching it when it was the first cmd
-        // of the line.
-        if (args.text.match(/\bG20\b/i)) {
-          console.log('SETTING UNITS TO INCHES from pre-parser!!!')
-          state.isUnitsMm = false // false means inches cuz default is mm
-        } else if (args.text.match(/\bG21\b/i)) {
-          console.log('SETTING UNITS TO MM!!! from pre-parser')
-          state.isUnitsMm = true // true means mm
-        }
-
-        if (args.text.match(/F([\d.]+)/i)) { // scan for feedrate
-          const feedrate = parseFloat(RegExp.$1) // we have a new feedrate
-          args.feedrate = feedrate
-          this.lastFeedrate = feedrate
-        } else {
-          args.feedrate = this.lastFeedrate // use feedrate from prior lines
-        }
-
-        return handler(args, info, this)
-      } else {
-        console.error('No handler for gcode command!!!')
+        state.lastArgs = args
       }
     }
+  }
+  // OTHERWISE it was a comment or the line was empty
+  // we still need to create a segment with xyz in p2
+  // so that when we're being asked to /gotoline we have a position
+  // for each gcode line, even comments. we just use the last real position
+  // to give each gcode line (even a blank line) a spot to go to
+
+  // REMOVE THIS ?
+  // return handlers['default'](args, index)
+  let handlers = {}
+  let handler = handlers[args.cmd] || handlers['default']
+  if (handler) {
+    adaptUnitsAndFeedrateForHandler(args, state)
+  // return handler(args, index)
   } else {
-    // it was a comment or the line was empty
-    // we still need to create a segment with xyz in p2
-    // so that when we're being asked to /gotoline we have a position
-    // for each gcode line, even comments. we just use the last real position
-    // to give each gcode line (even a blank line) a spot to go to
+    console.error('No handler for gcode command!!!')
+  }
 
-    // REMOVE THIS ?
+  return args
+}
 
-    const args = {
-      'cmd': 'empty or comment',
-      'text': text,
-      'origtext': origtext,
-      'indx': info,
-      'isComment': isComment
-    }
-    return handlers['default'](args, info, this)
+//FIXME: switch to non mutating ?
+function adaptUnitsAndFeedrateForHandler (args, state) {
+  // do extra check here for units. units are
+  // specified via G20 or G21. We need to scan
+  // each line to see if it's inside the line because
+  // we were only catching it when it was the first cmd
+  // of the line.
+  if (args.text.match(/\bG20\b/i)) {
+    console.log('SETTING UNITS TO INCHES from pre-parser!!!')
+    state.isUnitsMm = false // false means inches cuz default is mm
+  } else if (args.text.match(/\bG21\b/i)) {
+    console.log('SETTING UNITS TO MM!!! from pre-parser')
+    state.isUnitsMm = true // true means mm
+  }
+
+  if (args.text.match(/F([\d.]+)/i)) { // scan for feedrate
+    const feedrate = parseFloat(RegExp.$1) // we have a new feedrate
+    args.feedrate = feedrate
+    state.lastFeedrate = feedrate
+  } else {
+    args.feedrate = state.lastFeedrate // use feedrate from prior lines
   }
 }

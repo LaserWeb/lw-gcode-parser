@@ -5,8 +5,25 @@
  * Description: A gcode parser,
 **/
 
-export default function makeGcodeStream (parameters = {}) {
-  /*
+//import makeHandlers from './gcodeHandlers'
+import parseAsChunks from './parseAsChunks'
+import makeBaseData from './objFromGcode'
+
+export default function parse(data, parameters={}){
+
+  const defaults ={
+    laserxmax: 0,
+    laserymax: 0
+  }
+
+  const {state} = makeBaseData()
+  parseAsChunks(data, state, defaults)
+  //const gCodeHandlers = makeHandlers()
+}
+
+
+  /*export default function makeGcodeStream (parameters = {}) {
+
   OLD code structure , for reference !
   //main entry point !!
   createObjectFromGCode(gcode, indxMax)
@@ -21,6 +38,4 @@ export default function makeGcodeStream (parameters = {}) {
         =>doChunk
           =>parseLine
           convertLineGeometryToBufferGeometry
-  */
-  
-}
+}*/
