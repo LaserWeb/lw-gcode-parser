@@ -1,21 +1,23 @@
 export function drawArc (state, aX, aY, aZ, endaZ, aRadius, aStartAngle, aEndAngle, aClockwise, plane) {
   // console.log("drawArc:", aX, aY, aZ, aRadius, aStartAngle, aEndAngle, aClockwise)
-  let ac = new THREE.ArcCurve(aX, aY, aRadius, aStartAngle, aEndAngle, aClockwise)
+  let ac = new THREE.ArcCurve(aX, aY, aRadius, aStartAngle, aEndAngle, aClockwise) // FIXME a harder one ...
   // console.log("ac:", ac)
   const material = {
     color: 0x00aaff,
     opacity: 0.5
   }
-  let acgeo = []
+  let geometry = {
+    positions: []
+  }
   let ctr = 0
   let z = aZ
   ac.getPoints(20).forEach(function (v) {
     // console.log(v)
     z = (((endaZ - aZ) / 20) * ctr) + aZ
-    acgeo.push(v.x, v.y, z)
+    geometry.positions.push(v.x, v.y, z)
     ctr++
   })
-  const aco = {geometry: acgeo, material}
+  const aco = {geometry, material}
   // aco.position.set(pArc.x, pArc.y, pArc.z)
   // console.log("aco:", aco)
   state.extraObjects[plane].push(aco)
@@ -103,5 +105,4 @@ export function drawArcFrom2PtsAndCenter (vp1, vp2, vpArc, args) {
       default:
         obj = drawArc(vpArc.x, vpArc.y, vp1.z, vp2.z, radius, anglepArcp1, anglepArcp2, clwise, 'G17')
   }
-  return threeObj
 }

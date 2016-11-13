@@ -6,9 +6,7 @@ export function addSegment (state, args, p1, p2) {
     console.log('addSegment')
   }
   closeLineSegment(state)
-  let bbbox = []
-  let bbbox2 = []
-
+  let {bbox, bbox2} = state
   // console.log("")
   // console.log("addSegment p2:", p2)
   // add segment to array for later use
@@ -149,7 +147,6 @@ export function addSegment (state, args, p1, p2) {
     }
 
     const arcObj = drawArcFrom2PtsAndCenter(vp1, vp2, vpArc, args)
-
     // still push the normal p1/p2 point for debug
     p2.g2 = true
     p2.arcObj = arcObj
@@ -158,27 +155,27 @@ export function addSegment (state, args, p1, p2) {
   // so hiding them for now. jlauer 8/15/15
   /*
     geometry = group.geometry
-    geometry.vertices.push(
+    geometry.positions.push(
     [p1.x, p1.y, p1.z])
-    geometry.vertices.push(
+    geometry.positions.push(
     [p2.x, p2.y, p2.z))
     geometry.colors.push(group.color)
     geometry.colors.push(group.color)
   */
   } else {
-    geometry.vertices.push([p1.x, p1.y, p1.z])
-    geometry.vertices.push([p2.x, p2.y, p2.z])
+    geometry.positions.push(p1.x, p1.y, p1.z)
+    geometry.positions.push(p2.x, p2.y, p2.z)
     geometry.colors.push(group.color)
     geometry.colors.push(group.color)
   }
 
   if (p2.extruding) {
-    bbbox.min.x = Math.min(bbbox.min.x, p2.x)
-    bbbox.min.y = Math.min(bbbox.min.y, p2.y)
-    bbbox.min.z = Math.min(bbbox.min.z, p2.z)
-    bbbox.max.x = Math.max(bbbox.max.x, p2.x)
-    bbbox.max.y = Math.max(bbbox.max.y, p2.y)
-    bbbox.max.z = Math.max(bbbox.max.z, p2.z)
+    bbox.min.x = Math.min(bbox.min.x, p2.x)
+    bbox.min.y = Math.min(bbox.min.y, p2.y)
+    bbox.min.z = Math.min(bbox.min.z, p2.z)
+    bbox.max.x = Math.max(bbox.max.x, p2.x)
+    bbox.max.y = Math.max(bbox.max.y, p2.y)
+    bbox.max.z = Math.max(bbox.max.z, p2.z)
   }
   if (p2.g0) {
     // we're in a toolhead move, label moves
@@ -196,12 +193,12 @@ export function addSegment (state, args, p1, p2) {
     */
   }
   // global bounding box calc
-  bbbox2.min.x = Math.min(bbbox2.min.x, p2.x)
-  bbbox2.min.y = Math.min(bbbox2.min.y, p2.y)
-  bbbox2.min.z = Math.min(bbbox2.min.z, p2.z)
-  bbbox2.max.x = Math.max(bbbox2.max.x, p2.x)
-  bbbox2.max.y = Math.max(bbbox2.max.y, p2.y)
-  bbbox2.max.z = Math.max(bbbox2.max.z, p2.z)
+  bbox2.min.x = Math.min(bbox2.min.x, p2.x)
+  bbox2.min.y = Math.min(bbox2.min.y, p2.y)
+  bbox2.min.z = Math.min(bbox2.min.z, p2.z)
+  bbox2.max.x = Math.max(bbox2.max.x, p2.x)
+  bbox2.max.y = Math.max(bbox2.max.y, p2.y)
+  bbox2.max.z = Math.max(bbox2.max.z, p2.z)
 
   /* NEW METHOD OF CREATING OBJECTS
   create new approach for objects which is
@@ -238,9 +235,9 @@ export function addSegment (state, args, p1, p2) {
     }
     gcodeObj = {geometry, material}
   }
-  gcodeObj.userData.p2 = p2
-  gcodeObj.userData.args = args
-  new3dObj.add(gcodeObj)
+  gcodeObj.p2 = p2
+  gcodeObj.args = args
+  state.container.children.push(gcodeObj)
 
   // DISTANCE CALC
   // add distance so we can calc estimated time to run
@@ -255,8 +252,8 @@ export function addSegment (state, args, p1, p2) {
     // console.log("arcGeo:", arcGeo)
 
     let tad2 = 0
-    for (let arcLineCtr = 0; arcLineCtr < arcGeo.vertices.length - 1; arcLineCtr++) {
-      tad2 += arcGeo.vertices[arcLineCtr].distanceTo(arcGeo.vertices[arcLineCtr + 1])
+    for (let arcLineCtr = 0; arcLineCtr < arcGeo.positions.length - 1; arcLineCtr++) {
+      tad2 += arcGeo.positions[arcLineCtr].distanceTo(arcGeo.positions[arcLineCtr + 1])
     }
     // console.log("tad2:", tad2)
 
@@ -311,7 +308,7 @@ export function addSegment (state, args, p1, p2) {
   p2.timeMinsSum = totalTime
 
   // console.log('Total Time'+totalTime)
-  totaltimemax += (timeMinutes * 60)
+  state.metrics.totaltimemax += (timeMinutes * 60)
   // console.log("calculating distance. dist:", dist, "totalDist:", totalDist, "feedrate:", args.feedrate, "timeMinsToExecute:", timeMinutes, "totalTime:", totalTime, "p1:", p1, "p2:", p2, "args:", args)
   return {
     dist,
@@ -337,41 +334,44 @@ export function addFakeSegment (state, args) { // lineObject, lastLine, lines) {
 }
 
 export function addLineSegment (state, args, p1, p2) {
+  if(state.debug){
+    console.log('addLineSegment')
+  }
   let {lineObject, lasermultiply, bufSize} = state
   let i = lineObject.nLines * 6
-  // lineObject.vertexBuf[i+0] = p1.x  // Vertices
-  // lineObject.vertexBuf[i+1] = p1.y
-  // lineObject.vertexBuf[i+2] = p1.z
-  // lineObject.vertexBuf[i+3] = p2.x
-  // lineObject.vertexBuf[i+4] = p2.y
-  // lineObject.vertexBuf[i+5] = p2.z
+  // lineObject.positions[i+0] = p1.x  // positions
+  // lineObject.positions[i+1] = p1.y
+  // lineObject.positions[i+2] = p1.z
+  // lineObject.positions[i+3] = p2.x
+  // lineObject.positions[i+4] = p2.y
+  // lineObject.positions[i+5] = p2.z
 
   if (p1.a !== 0 || p2.a !== 0) { // A axis: rotate around X
     const R1 = Math.sqrt(p1.y * p1.y + p1.z * p1.z)
     const R2 = Math.sqrt(p2.y * p2.y + p2.z * p2.z)
     const a1 = p1.y === 0 ? Math.sign(p1.z) * 90 : Math.atan2(p1.z, p1.y) * 180.0 / Math.PI
     const a2 = p2.y === 0 ? Math.sign(p2.z) * 90 : Math.atan2(p2.z, p2.y) * 180.0 / Math.PI
-    lineObject.vertexBuf[i + 0] = p1.x
-    lineObject.vertexBuf[i + 1] = R1 * Math.cos((-p1.a + a1) * Math.PI / 180.0)
-    lineObject.vertexBuf[i + 2] = R1 * Math.sin((-p1.a + a1) * Math.PI / 180.0)
-    lineObject.vertexBuf[i + 3] = p2.x
-    lineObject.vertexBuf[i + 4] = R2 * Math.cos((-p2.a + a2) * Math.PI / 180.0)
-    lineObject.vertexBuf[i + 5] = R2 * Math.sin((-p2.a + a2) * Math.PI / 180.0)
+    lineObject.positions[i + 0] = p1.x
+    lineObject.positions[i + 1] = R1 * Math.cos((-p1.a + a1) * Math.PI / 180.0)
+    lineObject.positions[i + 2] = R1 * Math.sin((-p1.a + a1) * Math.PI / 180.0)
+    lineObject.positions[i + 3] = p2.x
+    lineObject.positions[i + 4] = R2 * Math.cos((-p2.a + a2) * Math.PI / 180.0)
+    lineObject.positions[i + 5] = R2 * Math.sin((-p2.a + a2) * Math.PI / 180.0)
   } else {
     //  Vertice code for A Axis as submitted by HakanBasted - commented out by PvdW else normal gcode only renders in a single Y line.
-    // lineObject.vertexBuf[i+0] = p1.x  // Vertices
-    // lineObject.vertexBuf[i+1] = 0.1*p1.a
-    // lineObject.vertexBuf[i+2] = p1.z
-    // lineObject.vertexBuf[i+3] = p2.x
-    // lineObject.vertexBuf[i+4] = 0.1*p2.a
-    // lineObject.vertexBuf[i+5] = p2.z
+    // lineObject.positions[i+0] = p1.x  // positions
+    // lineObject.positions[i+1] = 0.1*p1.a
+    // lineObject.positions[i+2] = p1.z
+    // lineObject.positions[i+3] = p2.x
+    // lineObject.positions[i+4] = 0.1*p2.a
+    // lineObject.positions[i+5] = p2.z
 
-    lineObject.vertexBuf[i + 0] = p1.x // Vertices
-    lineObject.vertexBuf[i + 1] = p1.y
-    lineObject.vertexBuf[i + 2] = p1.z
-    lineObject.vertexBuf[i + 3] = p2.x
-    lineObject.vertexBuf[i + 4] = p2.y
-    lineObject.vertexBuf[i + 5] = p2.z
+    lineObject.positions[i + 0] = p1.x // positions
+    lineObject.positions[i + 1] = p1.y
+    lineObject.positions[i + 2] = p1.z
+    lineObject.positions[i + 3] = p2.x
+    lineObject.positions[i + 4] = p2.y
+    lineObject.positions[i + 5] = p2.z
   }
   // console.log("Segment " + p1)
 
@@ -391,12 +391,12 @@ export function addLineSegment (state, args, p1, p2) {
     intensity = 1.0 - p2.s / lasermultiply
   }
 
-  lineObject.colorBuf[i + 0] = color.r + (1 - color.r) * intensity // Colors
-  lineObject.colorBuf[i + 1] = color.g + (1 - color.g) * intensity
-  lineObject.colorBuf[i + 2] = color.b + (1 - color.b) * intensity
-  lineObject.colorBuf[i + 3] = color.r + (1 - color.r) * intensity
-  lineObject.colorBuf[i + 4] = color.g + (1 - color.g) * intensity
-  lineObject.colorBuf[i + 5] = color.b + (1 - color.b) * intensity
+  lineObject.colors[i + 0] = color.r + (1 - color.r) * intensity // Colors
+  lineObject.colors[i + 1] = color.g + (1 - color.g) * intensity
+  lineObject.colors[i + 2] = color.b + (1 - color.b) * intensity
+  lineObject.colors[i + 3] = color.r + (1 - color.r) * intensity
+  lineObject.colors[i + 4] = color.g + (1 - color.g) * intensity
+  lineObject.colors[i + 5] = color.b + (1 - color.b) * intensity
 
   lineObject.nLines++
 
@@ -412,17 +412,20 @@ export function addLineSegment (state, args, p1, p2) {
   return {dist}
 }
 
-export function closeLineSegment ({lineObject, lineObjects}) {
+export function closeLineSegment ({debug, lineObject, lineObjects}) {
+  if(debug){
+    console.log('closeLineSegment', lineObject.nLines)
+  }
   if (lineObject.nLines === 0) {
     return
   }
 
-  const vertices = new Float32Array(6 * lineObject.nLines)
+  const positions = new Float32Array(6 * lineObject.nLines)
   const colors = new Float32Array(6 * lineObject.nLines)
-  vertices.set(lineObject.vertexBuf.subarray(0, lineObject.nLines * 6))
-  colors.set(lineObject.colorBuf.subarray(0, lineObject.nLines * 6))
+  positions.set(lineObject.positions.subarray(0, lineObject.nLines * 6))
+  colors.set(lineObject.colors.subarray(0, lineObject.nLines * 6))
 
-  const lines = {vertices, colors}
+  const lines = {positions, colors}
   lineObjects.lines.push(lines) // Feed the objects to "object" in doChunk()
   lineObject.nLines = 0
 }
