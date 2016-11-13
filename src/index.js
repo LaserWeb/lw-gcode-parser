@@ -5,20 +5,25 @@
  * Description: A gcode parser,
 **/
 
-//import makeHandlers from './gcodeHandlers'
+import makeHandlers from './gcodeHandlers'
 import parseAsChunks from './parseAsChunks'
 import makeBaseData from './objFromGcode'
 
 export default function parse(data, parameters={}){
+  //const params = Object.assign({}, machineDefaults, parameters)
 
-  const defaults ={
-    laserxmax: 0,
-    laserymax: 0
-  }
+  const handlers = makeHandlers()
+  let state = makeBaseData().state
 
-  const {state} = makeBaseData()
-  parseAsChunks(data, state, defaults)
-  //const gCodeHandlers = makeHandlers()
+  //FIXME: not sure AT ALL where/when lineObject is supposed to be created
+  state.lineObject = {
+    active: false,
+    vertexBuf: new Float32Array(6 * state.bufSize), // Start with bufSize line segments
+    colorBuf: new Float32Array(6 * state.bufSize), // Start with bufSize line segments
+    nLines: 0
+  },
+
+  parseAsChunks(state, handlers, data)
 }
 
 
@@ -26,7 +31,7 @@ export default function parse(data, parameters={}){
 
   OLD code structure , for reference !
   //main entry point !!
-  createObjectFromGCode(gcode, indxMax)
+  createObjectFromGCode(gcode, indexMax)
     => handlers = {
        gcode(G1 etc): function
          => drawArc

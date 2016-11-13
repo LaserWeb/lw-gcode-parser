@@ -1,7 +1,11 @@
-import {getLineGroup} from './foo'
+import { getLineGroup } from '../layers'
+import {drawArcFrom2PtsAndCenter} from './arcs'
 
-export function addSegment (p1, p2, args, lineObject) {
-  closeLineSegment(lineObject)
+export function addSegment (state, args, p1, p2) {
+  if(state.debug){
+    console.log('addSegment')
+  }
+  closeLineSegment(state)
   let bbbox = []
   let bbbox2 = []
 
@@ -17,19 +21,19 @@ export function addSegment (p1, p2, args, lineObject) {
     // console.log("")
     // console.log("drawing arc. p1:", p1, ", p2:", p2)
 
-    // var segmentCount = 12
+    // let segmentCount = 12
     // figure out the 3 pts we are dealing with
     // the start, the end, and the center of the arc circle
     // radius is dist from p1 x/y/z to pArc x/y/z
     // if(args.clockwise === false || args.cmd === "G3"){
-    //    var vp2 = [p1.x, p1.y, p1.z]
-    //    var vp1 = [p2.x, p2.y, p2.z]
+    //    let vp2 = [p1.x, p1.y, p1.z]
+    //    let vp1 = [p2.x, p2.y, p2.z]
     // }
     // else {
     const vp1 = [p1.x, p1.y, p1.z]
     const vp2 = [p2.x, p2.y, p2.z]
     // }
-    var vpArc
+    let vpArc
 
     // if this is an R arc gcode command, we're given the radius, so we
     // don't have to calculate it. however we need to determine center
@@ -123,15 +127,14 @@ export function addSegment (p1, p2, args, lineObject) {
           }
       }
 
-      if ((p2.clockwise === true && radius >= 0) || (p2.clockwise === false && radius < 0))
-      {
+      if ((p2.clockwise === true && radius >= 0) || (p2.clockwise === false && radius < 0)) {
         vpArc = [cw.x, cw.y, cw.z]
       }
       else vpArc = [ccw.x, ccw.y, ccw.z]
     } else {
       // this code deals with IJK gcode commands
       /*if(args.clockwise === false || args.cmd === "G3")
-        var pArc = {
+        let pArc = {
         x: p2.arci ? p1.x + p2.arci : p1.x,
         y: p2.arcj ? p1.y + p2.arcj : p1.y,
         z: p2.arck ? p1.z + p2.arck : p1.z,
@@ -145,11 +148,11 @@ export function addSegment (p1, p2, args, lineObject) {
       vpArc = [pArc.x, pArc.y, pArc.z]
     }
 
-    const threeObjArc = this.drawArcFrom2PtsAndCenter(vp1, vp2, vpArc, args)
+    const arcObj = drawArcFrom2PtsAndCenter(vp1, vp2, vpArc, args)
 
     // still push the normal p1/p2 point for debug
     p2.g2 = true
-    p2.threeObjArc = threeObjArc
+    p2.arcObj = arcObj
     group = getLineGroup(p2, args)
   // these golden lines showing start/end of a g2 or g3 arc were confusing people
   // so hiding them for now. jlauer 8/15/15
@@ -205,11 +208,11 @@ export function addSegment (p1, p2, args, lineObject) {
   a unique object for each line of gcode, including g2/g3's
   make sure userData is good too
   */
-  var gcodeObj
+  let gcodeObj
 
   if (p2.arc) {
     // use the arc that already got built
-    gcodeObj = p2.threeObjArc
+    gcodeObj = p2.arcObj
   } else {
     // make a line
     let color = 0X0000ff
@@ -229,13 +232,11 @@ export function addSegment (p1, p2, args, lineObject) {
       color = 0x0033ff
     }
 
-    var material = new THREE.LineBasicMaterial({
+    const material = {
       color: color,
-      opacity: 0.5,
-      transparent: true
-    })
-    var line = new THREE.Line(geometry, material)
-    gcodeObj = line
+      opacity: 0.5
+    }
+    gcodeObj = {geometry, material}
   }
   gcodeObj.userData.p2 = p2
   gcodeObj.userData.args = args
@@ -249,12 +250,12 @@ export function addSegment (p1, p2, args, lineObject) {
   let b
   if (p2.arc) {
     // calc dist of all lines
-    // console.log("this is an arc to calc dist for. p2.threeObjArc:", p2.threeObjArc, "p2:", p2)
-    var arcGeo = p2.threeObjArc.geometry
+    // console.log("this is an arc to calc dist for. p2.arcObj:", p2.arcObj, "p2:", p2)
+    let arcGeo = p2.arcObj.geometry
     // console.log("arcGeo:", arcGeo)
 
-    var tad2 = 0
-    for (var arcLineCtr = 0; arcLineCtr < arcGeo.vertices.length - 1; arcLineCtr++) {
+    let tad2 = 0
+    for (let arcLineCtr = 0; arcLineCtr < arcGeo.vertices.length - 1; arcLineCtr++) {
       tad2 += arcGeo.vertices[arcLineCtr].distanceTo(arcGeo.vertices[arcLineCtr + 1])
     }
     // console.log("tad2:", tad2)
@@ -276,7 +277,7 @@ export function addSegment (p1, p2, args, lineObject) {
   sv = args.s
   // console.log(sv)
 
-  //time distance computation
+  // time distance computation
   if (dist > 0) {
     totalDist += dist
   }
@@ -284,15 +285,15 @@ export function addSegment (p1, p2, args, lineObject) {
   // time to execute this move
   // if this move is 10mm and we are moving at 100mm/min then
   // this move will take 10/100 = 0.1 minutes or 6 seconds
-  var timeMinutes = 0
+  let timeMinutes = 0
   if (dist > 0) {
-    var fr
+    let feedrate
     if (args.feedrate > 0) {
-      fr = args.feedrate
+      feedrate = args.feedrate
     } else {
-      fr = 100
+      feedrate = 100
     }
-    timeMinutes = dist / fr
+    timeMinutes = dist / feedrate
 
     // adjust for acceleration, meaning estimate
     // this will run longer than estimated from the math
@@ -311,29 +312,32 @@ export function addSegment (p1, p2, args, lineObject) {
 
   // console.log('Total Time'+totalTime)
   totaltimemax += (timeMinutes * 60)
-// console.log("calculating distance. dist:", dist, "totalDist:", totalDist, "feedrate:", args.feedrate, "timeMinsToExecute:", timeMinutes, "totalTime:", totalTime, "p1:", p1, "p2:", p2, "args:", args)
+  // console.log("calculating distance. dist:", dist, "totalDist:", totalDist, "feedrate:", args.feedrate, "timeMinsToExecute:", timeMinutes, "totalTime:", totalTime, "p1:", p1, "p2:", p2, "args:", args)
   return {
     dist,
-    timeMinutes
-  }
+  timeMinutes}
 }
 
-export function addFakeSegment (args, lineObject, lastLine, lines) {
-  closeLineSegment(lineObject)
+export function addFakeSegment (state, args) { // lineObject, lastLine, lines) {
+  if (state.debug) {
+    console.log('addFakeSegment')
+  }
+  closeLineSegment(state)
   // line.args = args
   const arg2 = {
     isFake: true,
     text: args.text,
-    indx: args.indx,
+    index: args.index,
     isComment: args.text.match(/^(;|\(|<)/)
   }
-  lines.push({
-    p2: lastLine, // since this is fake, just use lastLine as xyz
+  state.lines.push({
+    p2: state.lastLine, // since this is fake, just use lastLine as xyz
     args: arg2
   })
 }
 
-export function addLineSegment (p1, p2, lineObject, lasermultiply, bufSize) {
+export function addLineSegment (state, args, p1, p2) {
+  let {lineObject, lasermultiply, bufSize} = state
   let i = lineObject.nLines * 6
   // lineObject.vertexBuf[i+0] = p1.x  // Vertices
   // lineObject.vertexBuf[i+1] = p1.y
@@ -343,10 +347,10 @@ export function addLineSegment (p1, p2, lineObject, lasermultiply, bufSize) {
   // lineObject.vertexBuf[i+5] = p2.z
 
   if (p1.a !== 0 || p2.a !== 0) { // A axis: rotate around X
-    var R1 = Math.sqrt(p1.y * p1.y + p1.z * p1.z)
-    var R2 = Math.sqrt(p2.y * p2.y + p2.z * p2.z)
-    var a1 = p1.y === 0 ? Math.sign(p1.z) * 90 : Math.atan2(p1.z, p1.y) * 180.0 / Math.PI
-    var a2 = p2.y === 0 ? Math.sign(p2.z) * 90 : Math.atan2(p2.z, p2.y) * 180.0 / Math.PI
+    const R1 = Math.sqrt(p1.y * p1.y + p1.z * p1.z)
+    const R2 = Math.sqrt(p2.y * p2.y + p2.z * p2.z)
+    const a1 = p1.y === 0 ? Math.sign(p1.z) * 90 : Math.atan2(p1.z, p1.y) * 180.0 / Math.PI
+    const a2 = p2.y === 0 ? Math.sign(p2.z) * 90 : Math.atan2(p2.z, p2.y) * 180.0 / Math.PI
     lineObject.vertexBuf[i + 0] = p1.x
     lineObject.vertexBuf[i + 1] = R1 * Math.cos((-p1.a + a1) * Math.PI / 180.0)
     lineObject.vertexBuf[i + 2] = R1 * Math.sin((-p1.a + a1) * Math.PI / 180.0)
@@ -371,33 +375,33 @@ export function addLineSegment (p1, p2, lineObject, lasermultiply, bufSize) {
   }
   // console.log("Segment " + p1)
 
-  var col
-  var intensity
+  let color
+  let intensity
   if (p2.g0) { // g0
-    col = {r: 0, g: 1, b: 0}
-    intensity = 1.0 - p2.s / lasermultiply // lasermultiply
+    color = {r: 0, g: 1, b: 0}
+    intensity = 1.0 - p2.s / lasermultiply
   } else if (p2.g1) { // g1
-    col = {r: 0.7, g: 0, b: 0}
-    intensity = 1.0 - p2.s / lasermultiply // lasermultiply
+    color = {r: 0.7, g: 0, b: 0}
+    intensity = 1.0 - p2.s / lasermultiply
   } else if (p2.g7) { // g7
-    col = {r: 0, g: 0, b: 1}
-    intensity = 1.0 - p2.s / lasermultiply // lasermultiply
+    color = {r: 0, g: 0, b: 1}
+    intensity = 1.0 - p2.s / lasermultiply
   } else {
-    col = {r: 0, g: 1, b: 1}
-    intensity = 1.0 - p2.s / lasermultiply // lasermultiply
+    color = {r: 0, g: 1, b: 1}
+    intensity = 1.0 - p2.s / lasermultiply
   }
 
-  lineObject.colorBuf[i + 0] = col.r + (1 - col.r) * intensity // Colors
-  lineObject.colorBuf[i + 1] = col.g + (1 - col.g) * intensity
-  lineObject.colorBuf[i + 2] = col.b + (1 - col.b) * intensity
-  lineObject.colorBuf[i + 3] = col.r + (1 - col.r) * intensity
-  lineObject.colorBuf[i + 4] = col.g + (1 - col.g) * intensity
-  lineObject.colorBuf[i + 5] = col.b + (1 - col.b) * intensity
+  lineObject.colorBuf[i + 0] = color.r + (1 - color.r) * intensity // Colors
+  lineObject.colorBuf[i + 1] = color.g + (1 - color.g) * intensity
+  lineObject.colorBuf[i + 2] = color.b + (1 - color.b) * intensity
+  lineObject.colorBuf[i + 3] = color.r + (1 - color.r) * intensity
+  lineObject.colorBuf[i + 4] = color.g + (1 - color.g) * intensity
+  lineObject.colorBuf[i + 5] = color.b + (1 - color.b) * intensity
 
   lineObject.nLines++
 
   if (lineObject.nLines === bufSize) {
-    closeLineSegment(lineObject)
+    closeLineSegment(state)
   }
 
   const dist = Math.sqrt((p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y) + (p1.z - p2.z) * (p1.z - p2.z))
@@ -405,12 +409,10 @@ export function addLineSegment (p1, p2, lineObject, lasermultiply, bufSize) {
   // timeMinutes = dist / p2.f
   // totalTime += timeMinutes
   // totaltimemax = totalTime * 60
-  return {
-    dist
-  }
+  return {dist}
 }
 
-export function closeLineSegment (lineObject) {
+export function closeLineSegment ({lineObject, lineObjects}) {
   if (lineObject.nLines === 0) {
     return
   }
@@ -421,6 +423,6 @@ export function closeLineSegment (lineObject) {
   colors.set(lineObject.colorBuf.subarray(0, lineObject.nLines * 6))
 
   const lines = {vertices, colors}
-  lineObjects.add(lines) // Feed the objects to "object" in doChunk()
+  lineObjects.lines.push(lines) // Feed the objects to "object" in doChunk()
   lineObject.nLines = 0
 }

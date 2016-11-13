@@ -4,8 +4,8 @@ function now () {
   return new Date().getTime()
 }
 
-export default function parseAsChunks(gcode, state, params){
-  const {lineObjects, laserxmax, laserymax} = params
+export default function parseAsChunks (state, handlers, gcode) {
+  const {lineObjects, laserxmax, laserymax} = state
 
   const lines = gcode.split(/\r{0,1}\n/)
   const count = lines.length
@@ -17,27 +17,26 @@ export default function parseAsChunks(gcode, state, params){
 
     let startTime = now()
     while (index < count && (now() - startTime) <= maxTimePerChunk) {
-      //console.log('parsing ' + lines[index])
-      parseLine(lines[index], index, state)
+      // console.log('parsing ' + lines[index])
+      parseLine(state, handlers, lines[index], index)
       ++index
     }
-    //closeLineSegment() //FIXME : add this back .??? or not
+    // closeLineSegment() //FIXME : add this back .??? or not
 
     // console.log('done parsing ')
     if (index < count) {
       setTimeout(doChunk, 1) // set Timeout for async iteration
     // console.log('[GCODE PARSE] ' + (index / count ) * 100 + "%")
     } else {
-      console.log('done parsing')
+      console.log('done parsing')//, state.lineObjects.lines)
     }
   }
 
   doChunk()
 }
 
-//"old" for reference
+// "old" for reference
 export function __parser (gcode, params, progressCallback, doneCallback) {
-
   console.log('inside this.parse')
   object = null
   function doChunk () {
@@ -50,7 +49,7 @@ export function __parser (gcode, params, progressCallback, doneCallback) {
       parseLine(lines[index], index)
       ++index
     }
-    //closeLineSegment() //FIXME : add this back !!
+    // closeLineSegment() //FIXME : add this back !!
 
     // console.log('done parsing ')
     if (index < count) {
@@ -69,6 +68,6 @@ export function __parser (gcode, params, progressCallback, doneCallback) {
     }
   }
 
-  //start it
+  // start it
   doChunk()
 }

@@ -1,4 +1,4 @@
-export default function parseLine (text, index, state, handlers) {
+export default function parseLine (state, handlers, text, index) {
   console.log('Parsing: ', text)
   const origtext = text
 
@@ -11,9 +11,10 @@ export default function parseLine (text, index, state, handlers) {
   const isComment = baseParse.isComment
   text = baseParse.text
 
-  return generateArgs(state, text, origtext, index, isComment, isG7)
+  return generateArgs(state, handlers, text, origtext, index, isComment, isG7)
 }
 
+/*parses 'default' text , ie non raster/G7*/
 function parseDefault (text, origtext) {
   let isComment = false
 
@@ -35,6 +36,7 @@ function parseDefault (text, origtext) {
   return {text, isComment}
 }
 
+/* parses...raster text ! (surprising isn't it?)*/
 function parseRaster (text, origtext) {
   let isComment = false
   text = text.trim()
@@ -45,7 +47,7 @@ function parseRaster (text, origtext) {
   return {text, isComment}
 }
 
-function generateArgs (state, text, origtext, index, isComment, isG7) {
+function generateArgs (state, handlers, text, origtext, index, isComment, isG7) {
   let {lastArgs} = state
   let args = { // defaults to an empty/comment line args
     cmd: 'empty or comment',
@@ -115,16 +117,15 @@ function generateArgs (state, text, origtext, index, isComment, isG7) {
 
   // REMOVE THIS ?
   // return handlers['default'](args, index)
-  let handlers = {}
   let handler = handlers[args.cmd] || handlers['default']
   if (handler) {
     adaptUnitsAndFeedrateForHandler(args, state)
-  // return handler(args, index)
+    return handler(state, args, index)
   } else {
     console.error('No handler for gcode command!!!')
   }
 
-  return args
+  //return args
 }
 
 //FIXME: switch to non mutating ?

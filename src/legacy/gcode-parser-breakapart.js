@@ -19,11 +19,7 @@ function GCodeParser (handlers) {
 }
 
 
-  var lineObject = {active: false,
-    vertexBuf: new Float32Array(6 * bufSize), // Start with bufSize line segments
-    colorBuf: new Float32Array(6 * bufSize), // Start with bufSize line segments
-    nLines: 0,
-  }
+
   var material = new THREE.LineBasicMaterial({vertexColors: THREE.VertexColors,
     opacity: 0.8,
     transparent: true,

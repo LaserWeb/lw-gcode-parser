@@ -1,25 +1,24 @@
-export function drawArc (aX, aY, aZ, endaZ, aRadius, aStartAngle, aEndAngle, aClockwise, plane) {
+export function drawArc (state, aX, aY, aZ, endaZ, aRadius, aStartAngle, aEndAngle, aClockwise, plane) {
   // console.log("drawArc:", aX, aY, aZ, aRadius, aStartAngle, aEndAngle, aClockwise)
-  var ac = new THREE.ArcCurve(aX, aY, aRadius, aStartAngle, aEndAngle, aClockwise)
+  let ac = new THREE.ArcCurve(aX, aY, aRadius, aStartAngle, aEndAngle, aClockwise)
   // console.log("ac:", ac)
-  var acmat = new THREE.LineBasicMaterial({
+  const material = {
     color: 0x00aaff,
-    opacity: 0.5,
-    transparent: true
-  })
-  var acgeo = new THREE.Geometry()
-  var ctr = 0
-  var z = aZ
+    opacity: 0.5
+  }
+  let acgeo = []
+  let ctr = 0
+  let z = aZ
   ac.getPoints(20).forEach(function (v) {
     // console.log(v)
     z = (((endaZ - aZ) / 20) * ctr) + aZ
-    acgeo.vertices.push(new THREE.Vector3(v.x, v.y, z))
+    acgeo.push(v.x, v.y, z)
     ctr++
   })
-  var aco = new THREE.Line(acgeo, acmat)
+  const aco = {geometry: acgeo, material}
   // aco.position.set(pArc.x, pArc.y, pArc.z)
   // console.log("aco:", aco)
-  this.extraObjects[plane].push(aco)
+  state.extraObjects[plane].push(aco)
   return aco
 }
 
@@ -78,6 +77,7 @@ export function drawArcFrom2PtsAndCenter (vp1, vp2, vpArc, args) {
   }
 
   if (anglepArcp1 === anglepArcp2 && clwise === false)
+  {
     let obj = undefined
     // Draw full circle if angles are both zero,
     // start & end points are same point... I think
@@ -90,6 +90,7 @@ export function drawArcFrom2PtsAndCenter (vp1, vp2, vpArc, args) {
         break
       default:
         obj = drawArc(vpArc.x, vpArc.y, vp1.z, vp2.z, radius, anglepArcp1, (anglepArcp2 + (2 * Math.PI)), clwise, 'G17')
+    }
   }
   else
     switch (args.plane) {

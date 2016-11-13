@@ -1,11 +1,12 @@
-export default function drawobject () {
+export default function drawobject (state) {
   var newObject = false
   // console.log("INSIDE DRAWOBJECT")
   // set what units we're using in the gcode
-  isUnitsMm = parser.isUnitsMm
+  isUnitsMm = state.isUnitsMm
 
-  newObject = new THREE.Object3D()
-  newObject.name = 'newObject'
+  newObject = {
+    name:'newObject'
+  }
 
   // old approach of monolithic line segment
   for (var lid in layers3d) {
