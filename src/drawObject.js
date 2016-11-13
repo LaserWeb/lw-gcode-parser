@@ -5,7 +5,7 @@ export default function drawobject (state) {
   isUnitsMm = state.isUnitsMm
 
   newObject = {
-    name:'newObject'
+    name: 'newObject'
   }
 
   // old approach of monolithic line segment
@@ -49,49 +49,51 @@ export default function drawobject (state) {
   // Center
   var scale = 1; // TODO: Auto size
 
-  var center = new THREE.Vector3(
-    bbbox.min.x + ((bbbox.max.x - bbbox.min.x) / 2),
-    bbbox.min.y + ((bbbox.max.y - bbbox.min.y) / 2),
-    bbbox.min.z + ((bbbox.max.z - bbbox.min.z) / 2))
+  const center = [
+    bbox.min.x + ((bbox.max.x - bbox.min.x) / 2),
+    bbox.min.y + ((bbox.max.y - bbox.min.y) / 2),
+    bbox.min.z + ((bbox.max.z - bbox.min.z) / 2)]
 
-  var center2 = new THREE.Vector3(
-    bbbox2.min.x + ((bbbox2.max.x - bbbox2.min.x) / 2),
-    bbbox2.min.y + ((bbbox2.max.y - bbbox2.min.y) / 2),
-    bbbox2.min.z + ((bbbox2.max.z - bbbox2.min.z) / 2))
+  const center2 = [
+    bbox2.min.x + ((bbox2.max.x - bbox2.min.x) / 2),
+    bbox2.min.y + ((bbox2.max.y - bbox2.min.y) / 2),
+    bbox2.min.z + ((bbox2.max.z - bbox2.min.z) / 2)]
 
-  var dX = bbbox2.max.x - bbbox2.min.x
-  var dY = bbbox2.max.y - bbbox2.min.y
-  var dZ = bbbox2.max.z - bbbox2.min.z
+  const dX = bbox2.max.x - bbox2.min.x
+  const dY = bbox2.max.y - bbox2.min.y
+  const dZ = bbox2.max.z - bbox2.min.z
 
   function toTimeString (seconds) {
     // return (new Date(seconds * 1000)).toUTCString().match(/(\d\d:\d\d:\d\d)/)[0]
   }
 
-  console.log(totaltimemax + '  seconds estimated')
-
+  //console.log(totaltimemax + '  seconds estimated')
   // printLog('Estimated Job Time: '+totaltimemax, successcolor)
+  // printLog('Estimated Distance: <b>' + (totalDist / 1000).toFixed(1) + ' m</b>', msgcolor, 'viewer')
 
-  printLog('Estimated Distance: <b>' + (totalDist / 1000).toFixed(1) + ' m</b>', msgcolor, 'viewer')
-  $('#lasertimeqty').val((totalDist.toFixed(1)) / 10)
+  const estimatedJobTime = totaltimemax
+  const estimatedDistance = (totalDist / 1000).toFixed(1)
+  const lasertimeqty = (totalDist.toFixed(1)) / 10
 
   if (fileParentGroup) {
     var bbox2 = new THREE.Box3().setFromObject(fileParentGroup)
     //  console.log('bbox width: ', (bbox2.max.x - bbox2.min.x), 'height Y: ', (bbox2.max.y - bbox2.min.y) )
-    width = (bbox2.max.x - bbox2.min.x)
-    height = (bbox2.max.y - bbox2.min.y)
-    $('#quoteresult').html('Job moves length: ' + totalDist.toFixed(1) + ' mm<br> Width: ' + width.toFixed(1) + ' mm<br>Height: ' + height.toFixed(1) + ' mm<br>Material: ' + ((width * height) / 1000).toFixed(3) + 'cm<sup>2</sup>')
-    $('#materialqty').val(((width * height) / 1000).toFixed(3))
+  // <sup>2</sup>'
   } else if (rastermesh) {
-    var bbox2 = new THREE.Box3().setFromObject(rastermesh)
+    const bbox2 = new THREE.Box3().setFromObject(rastermesh)
     //  console.log('bbox width: ', (bbox2.max.x - bbox2.min.x), 'height Y: ', (bbox2.max.y - bbox2.min.y) )
-    width = (bbox2.max.x - bbox2.min.x)
-    height = (bbox2.max.y - bbox2.min.y)
-    $('#quoteresult').html('Job moves length: ' + totalDist.toFixed(1) + ' mm<br> Width: ' + width.toFixed(1) + ' mm<br>Height: ' + height.toFixed(1) + ' mm<br>Material: ' + ((width * height) / 1000).toFixed(3) + 'cm<sup>2</sup>')
-    $('#materialqty').val(((width * height) / 1000).toFixed(3))
+
   }
+  const width = (bbox2.max.x - bbox2.min.x)
+  const height = (bbox2.max.y - bbox2.min.y)
+  const materialqty = ((width * height) / 1000).toFixed(3)
+  const quoteresult = [
+    `Job moves length: ${totalDist.toFixed(1)} mm`,
+    `Width: ${width.toFixed(1)} mm`,
+    `Height: ${height.toFixed(1)} mm`,
+    `Material: ${((width * height) / 1000).toFixed(3)} cm`
+  ]
 
   console.groupEnd()
   return newObject
-  // console.groupEnd()
-
 }
