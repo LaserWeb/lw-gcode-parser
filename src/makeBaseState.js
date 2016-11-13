@@ -1,18 +1,4 @@
-export default function createObjectFromGCode (gcode, indexMax) {
-  console.log('Generating GCODE Preview')
-  // console.group("Rendering GCODE Preview")
-  // debugger
-  // Credit goes to https://github.com/joewalnes/gcode-viewer
-  // for the initial inspiration and example code.
-  //
-  // GCode descriptions come from:
-  //    http://reprap.org/wiki/G-code
-  //    http://en.wikipedia.org/wiki/G-code
-  //    SprintRun source code
-
-  // these are extra Object3D elements added during
-  // the gcode rendering to attach to scene
-
+export default function makeBaseState (gcode, indexMax) {
   let state = {
     debug: true,
 
@@ -26,7 +12,8 @@ export default function createObjectFromGCode (gcode, indexMax) {
       name: 'LineObjects'
     },
 
-    extraObjects: {
+    extraObjects: {// these are extra Object3D elements added during
+    // the gcode rendering to attach to scene
       'G17': [],
       'G18': [],
       'G19': []
@@ -62,25 +49,17 @@ export default function createObjectFromGCode (gcode, indexMax) {
       extruding: false
     },
 
-    bbbox: {
+    bbox: {
       min: [100000, 100000, 100000],
       max: [-100000, -100000, -100000]
     },
 
-    bbbox2: {
+    bbox2: {
       min: [100000, 100000, 100000],
       max: [-100000, -100000, -100000]
     },
 
     bufSize: 10000, // Arbitrary - play around with!
-    colors: {
-      'G0': 0x00ff00,
-      'G1': 0x0000ff,
-      'G2': 0x999900
-    },
-    /*colorG0: 0x00ff00,
-    colorG1: 0x0000ff,
-    colorG2: 0x999900,*/
 
     lasermultiply: 100,
     laserxmax: undefined,
@@ -89,13 +68,13 @@ export default function createObjectFromGCode (gcode, indexMax) {
     // command specific settings, not sure about this:
     specifics: {
       G0: {
-        color: 0x00ff00,
+        color: 0x00ff00
       },
       G1: {
-        color: 0x0000ff,
+        color: 0x0000ff
       },
       G2: {
-        color: 0x999900,
+        color: 0x999900
       },
       G7: {
         dir: 0,
@@ -113,18 +92,13 @@ export default function createObjectFromGCode (gcode, indexMax) {
       G92: {
         offset: {x: 0, y: 0, z: 0, a: 0, e: 0}
       }
-    }
-  }
+    },
 
-  let lastLine = {
-    x: 0,
-    y: 0,
-    z: 0,
-    a: 0,
-    e: 0,
-    f: 0,
-    feedrate: null,
-    extruding: false
+    //container object/group
+    container: {
+      name: 'newobj',
+      children: []
+    }
   }
 
   // we have been using an approach where we just append
@@ -134,10 +108,6 @@ export default function createObjectFromGCode (gcode, indexMax) {
   // its own userData info
   // G2/G3 moves are their own child of lots of lines so
   // that even the simulator can follow along better
-  let new3dObj = {
-    name: 'newobj'
-  }
 
-  return {
-  state, lastLine, new3dObj}
+  return state
 }
