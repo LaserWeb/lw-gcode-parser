@@ -4,7 +4,7 @@ function now () {
   return new Date().getTime()
 }
 
-export default function parseAsChunks (state, handlers, gcode) {
+export default function parseAsChunks (state, handlers, gcode, doneCallback) {
   const {lineObjects, laserxmax, laserymax} = state
 
   const lines = gcode.split(/\r{0,1}\n/)
@@ -28,7 +28,8 @@ export default function parseAsChunks (state, handlers, gcode) {
       setTimeout(doChunk, 1) // set Timeout for async iteration
     // console.log('[GCODE PARSE] ' + (index / count ) * 100 + "%")
     } else {
-      console.log('done parsing')//, state.lineObjects.lines)
+      //console.log('done parsing')//, state.lineObjects.lines)
+      doneCallback(state)
     }
   }
 
