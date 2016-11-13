@@ -1,6 +1,6 @@
 export function getLineGroup (state, line, args) {
   console.log('getLineGroup:', line)
-  if (state.layer === undefined) newLayer(line)
+  if (state.layer === undefined) newLayer(line, state.layers.layers3d)
   const speed = Math.round(line.e / 1000)
   let opacity = line.s
   let tool = parseInt(line.t, 10)
@@ -56,15 +56,12 @@ export function getLineGroup (state, line, args) {
       extruding: line.extruding,
       color: color,
       segmentCount: 0,
-      //FIXME: how to deal with the things below ?
-      /*material: new THREE.LineBasicMaterial({
+      material: {
         opacity: opacity,
-        // opacity: line.extruding ? 0.5: line.g2 ? 0.2 : 0.3,
         transparent: true,
-        linewidth: 1,
-        vertexColors: THREE.FaceColors
-      }),
-      geometry: new THREE.Geometry(),*/
+        linewidth: 1
+      },
+      geometry: {positions: []}
     }
   }
   return state.layer.type[grouptype]

@@ -16,8 +16,8 @@ export default function makeHandlers (params) {
   let lines = undefined
 
   var lineObject = {active: false,
-    vertexBuf: new Float32Array(6 * bufSize), // Start with bufSize line segments
-    colorBuf: new Float32Array(6 * bufSize), // Start with bufSize line segments
+    positions: new Float32Array(6 * bufSize), // Start with bufSize line segments
+    colors: new Float32Array(6 * bufSize), // Start with bufSize line segments
     nLines: 0,
   }
   */
@@ -67,7 +67,9 @@ export default function makeHandlers (params) {
          watching when we extrude at a new Z position */
       if (delta(lastLine.e, newLine.e) > 0) {
         newLine.extruding = delta(lastLine.e, newLine.e) > 0
-        if (layer === undefined || newLine.z !== layer.z) cofg.newLayer(newLine)
+        if (layer === undefined || newLine.z !== layer.z) {
+          newLayer(newLine, state.layers.layers3d)
+        }
       }
       addLineSegment(state, args, lastLine, newLine)
       state.lastLine = newLine
