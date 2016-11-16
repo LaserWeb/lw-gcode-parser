@@ -2,7 +2,7 @@ export default function drawobject (state) {
   var newObject = false
   // console.log("INSIDE DRAWOBJECT")
   // set what units we're using in the gcode
-  isUnitsMm = state.isUnitsMm
+  unitsMm = state.unitsMm
 
   newObject = {
     name: 'newObject'

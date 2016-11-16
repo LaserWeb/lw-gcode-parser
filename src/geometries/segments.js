@@ -16,9 +16,7 @@ export function addSegment (state, args, p1, p2) {
   group.segmentCount++
   // see if we need to draw an arc
   if (p2.arc) {
-    // console.log("")
     // console.log("drawing arc. p1:", p1, ", p2:", p2)
-
     // let segmentCount = 12
     // figure out the 3 pts we are dealing with
     // the start, the end, and the center of the arc circle
@@ -177,7 +175,7 @@ export function addSegment (state, args, p1, p2) {
     bbox.max.y = Math.max(bbox.max.y, p2.y)
     bbox.max.z = Math.max(bbox.max.z, p2.z)
   }
-  if (p2.g0) {
+  if (p2.g === 0) {
     // we're in a toolhead move, label moves
     /*
       if (group.segmentCount < 2) {
@@ -221,9 +219,9 @@ export function addSegment (state, args, p1, p2) {
 
     if (p2.extruding) {
       color = 0xff00ff
-    } else if (p2.g0) {
+    } else if (p2.g === 0) {
       color = 0x00ff00
-    } else if (p2.g2) {
+    } else if (p2.g === 2) {
       // color = 0x999900
     } else if (p2.arc) {
       color = 0x0033ff
@@ -299,20 +297,17 @@ export function addSegment (state, args, p1, p2) {
     timeMinutes = timeMinutes * 1.32
   }
 
-  totalTime += timeMinutes
+  state.metrics.totalTime += timeMinutes
 
   p2.feedrate = args.feedrate
   p2.dist = dist
-  p2.distSum = totalDist
+  p2.distSum = state.metrics.totalDist
   p2.timeMins = timeMinutes
-  p2.timeMinsSum = totalTime
+  p2.timeMinsSum = state.metrics.totalTime
 
   // console.log('Total Time'+totalTime)
   state.metrics.totaltimemax += (timeMinutes * 60)
   // console.log("calculating distance. dist:", dist, "totalDist:", totalDist, "feedrate:", args.feedrate, "timeMinsToExecute:", timeMinutes, "totalTime:", totalTime, "p1:", p1, "p2:", p2, "args:", args)
-  return {
-    dist,
-  timeMinutes}
 }
 
 export function addFakeSegment (state, args) { // lineObject, lastLine, lines) {
@@ -339,12 +334,6 @@ export function addLineSegment (state, args, p1, p2) {
   }
   let {lineObject, lasermultiply, bufSize} = state
   let i = lineObject.nLines * 6
-  // lineObject.positions[i+0] = p1.x  // positions
-  // lineObject.positions[i+1] = p1.y
-  // lineObject.positions[i+2] = p1.z
-  // lineObject.positions[i+3] = p2.x
-  // lineObject.positions[i+4] = p2.y
-  // lineObject.positions[i+5] = p2.z
 
   if (p1.a !== 0 || p2.a !== 0) { // A axis: rotate around X
     const R1 = Math.sqrt(p1.y * p1.y + p1.z * p1.z)
@@ -357,14 +346,28 @@ export function addLineSegment (state, args, p1, p2) {
     lineObject.positions[i + 3] = p2.x
     lineObject.positions[i + 4] = R2 * Math.cos((-p2.a + a2) * Math.PI / 180.0)
     lineObject.positions[i + 5] = R2 * Math.sin((-p2.a + a2) * Math.PI / 180.0)
+
+    //FIXME: new structure should be G,X,Y,Z,E,F,S,T
+    /*lineObject.positions[i + 0] = p1.g
+    lineObject.positions[i + 1] = p1.x
+    lineObject.positions[i + 2] = R1 * Math.cos((-p1.a + a1) * Math.PI / 180.0)
+    lineObject.positions[i + 3] = R1 * Math.sin((-p1.a + a1) * Math.PI / 180.0)
+    lineObject.positions[i + 4] = p1.a
+    lineObject.positions[i + 5] = p1.e
+    lineObject.positions[i + 6] = p1.f
+    lineObject.positions[i + 7] = p1.s
+    lineObject.positions[i + 8] = p1.t*/
   } else {
-    //  Vertice code for A Axis as submitted by HakanBasted - commented out by PvdW else normal gcode only renders in a single Y line.
-    // lineObject.positions[i+0] = p1.x  // positions
-    // lineObject.positions[i+1] = 0.1*p1.a
-    // lineObject.positions[i+2] = p1.z
-    // lineObject.positions[i+3] = p2.x
-    // lineObject.positions[i+4] = 0.1*p2.a
-    // lineObject.positions[i+5] = p2.z
+    /*lineObject.positions[i + 0] = p1.g
+    lineObject.positions[i + 1] = p1.x // positions
+    lineObject.positions[i + 2] = p1.y
+    lineObject.positions[i + 3] = p1.z
+    lineObject.positions[i + 4] = p1.a
+    lineObject.positions[i + 5] = p1.e
+    lineObject.positions[i + 6] = p1.f
+    lineObject.positions[i + 7] = p1.s
+    lineObject.positions[i + 8] = p1.t*/
+
 
     lineObject.positions[i + 0] = p1.x // positions
     lineObject.positions[i + 1] = p1.y
@@ -377,13 +380,13 @@ export function addLineSegment (state, args, p1, p2) {
 
   let color
   let intensity
-  if (p2.g0) { // g0
+  if (p2.g === 0) { // g0
     color = {r: 0, g: 1, b: 0}
     intensity = 1.0 - p2.s / lasermultiply
-  } else if (p2.g1) { // g1
+  } else if (p2.g === 1) { // g1
     color = {r: 0.7, g: 0, b: 0}
     intensity = 1.0 - p2.s / lasermultiply
-  } else if (p2.g7) { // g7
+  } else if (p2.g === 7) { // g7
     color = {r: 0, g: 0, b: 1}
     intensity = 1.0 - p2.s / lasermultiply
   } else {
@@ -405,11 +408,9 @@ export function addLineSegment (state, args, p1, p2) {
   }
 
   const dist = Math.sqrt((p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y) + (p1.z - p2.z) * (p1.z - p2.z))
-  // totalDist += dist
-  // timeMinutes = dist / p2.f
-  // totalTime += timeMinutes
-  // totaltimemax = totalTime * 60
-  return {dist}
+  state.metrics.totalDist += dist
+  state.metrics.totalTime += dist / p2.f // time minutes
+  state.metrics.totaltimemax = state.metrics.totalTime * 60
 }
 
 export function closeLineSegment ({debug, lineObject, lineObjects}) {

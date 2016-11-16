@@ -3,25 +3,6 @@ import { addSegment, addLineSegment, addFakeSegment } from './geometries/segment
 import { newLayer } from './layers'
 
 export default function makeHandlers (params) {
-  /*let state = {
-    isUnitsMm: true,
-    plane: undefined,
-    relative: true,
-    offsetG92: {x: 0, y: 0, z: 0, a: 0, e: 0},
-    spotSizeG7: undefined,
-    dirG7: 0
-  }
-  const lineObject = {}
-  let lastLine = undefined
-  let lines = undefined
-
-  var lineObject = {active: false,
-    positions: new Float32Array(6 * bufSize), // Start with bufSize line segments
-    colors: new Float32Array(6 * bufSize), // Start with bufSize line segments
-    nLines: 0,
-  }
-  */
-
   const handlers = {
     // set the g92 offsets for the parser - defaults to no offset
     // When doing CNC, generally G0 just moves to a new location
@@ -30,6 +11,7 @@ export default function makeHandlers (params) {
     G0: function (state, args, index) {
       const {lastLine} = state
       const newLine = {
+        g: 0,
         x: args.x !== undefined ? absolute(state.relative, lastLine.x, args.x) + state.specifics.G92.offset.x : lastLine.x,
         y: args.y !== undefined ? absolute(state.relative, lastLine.y, args.y) + state.specifics.G92.offset.y : lastLine.y,
         z: args.z !== undefined ? absolute(state.relative, lastLine.z, args.z) + state.specifics.G92.offset.z : lastLine.z,
@@ -37,7 +19,7 @@ export default function makeHandlers (params) {
         e: args.e !== undefined ? absolute(state.relative, lastLine.e, args.e) + state.specifics.G92.offset.e : lastLine.e,
         f: args.f !== undefined ? args.f : lastLine.f,
         s: 100,
-        g0: true
+        t: undefined
       }
       addLineSegment(state, args, lastLine, newLine)
       state.lastLine = newLine
@@ -53,6 +35,7 @@ export default function makeHandlers (params) {
       // 22.4 mm.
 
       const newLine = {
+        g: 1,
         x: args.x !== undefined ? absolute(state.relative, lastLine.x, args.x) + state.specifics.G92.offset.x : lastLine.x,
         y: args.y !== undefined ? absolute(state.relative, lastLine.y, args.y) + state.specifics.G92.offset.y : lastLine.y,
         z: args.z !== undefined ? absolute(state.relative, lastLine.z, args.z) + state.specifics.G92.offset.z : lastLine.z,
@@ -60,13 +43,12 @@ export default function makeHandlers (params) {
         e: args.e !== undefined ? absolute(state.relative, lastLine.e, args.e) + state.specifics.G92.offset.e : lastLine.e,
         f: args.f !== undefined ? args.f : lastLine.f,
         s: args.s !== undefined ? args.s : lastLine.s,
-        t: args.t !== undefined ? args.t : lastLine.t,
-        g1: true
+        t: args.t !== undefined ? args.t : lastLine.t
       }
       /* layer change detection is or made by watching Z, it's made by
          watching when we extrude at a new Z position */
-      if (delta(lastLine.e, newLine.e) > 0) {
-        newLine.extruding = delta(lastLine.e, newLine.e) > 0
+      if (delta(state.relative, lastLine.e, newLine.e) > 0) {
+        newLine.extruding = delta(state.relative, lastLine.e, newLine.e) > 0
         if (layer === undefined || newLine.z !== layer.z) {
           newLayer(newLine, state.layers.layers3d)
         }
@@ -135,7 +117,7 @@ export default function makeHandlers (params) {
     },
 
     G7: function (state, args, index) {
-      const {lasermultiply, lastLine, lineObject, layer} = state
+      const {lastLine} = state
       // Example: G7 L68 D//////sljasflsfagdxsd,.df9078rhfnxm (68 of em)
       //          G7 $1 L4 DAAA=
       //          G7 $0 L4 D2312
@@ -157,6 +139,7 @@ export default function makeHandlers (params) {
         state.specifics.G7.dir = args.dollar
 
         const newLine = {
+          g: 0,
           x: lastLine.x,
           y: lastLine.y + state.specifics.G7.spotSize,
           z: lastLine.z,
@@ -164,8 +147,7 @@ export default function makeHandlers (params) {
           e: lastLine.e,
           f: lastLine.f,
           s: 100,
-          t: lastLine.t,
-          g0: true
+          t: lastLine.t
         }
         addLineSegment(state, args, lastLine, newLine)
         state.lastLine = newLine
@@ -173,6 +155,7 @@ export default function makeHandlers (params) {
       for (var i = 0; i < buf.length; i++) { // Process a base64-encoded chunk
         const intensity = 255 - buf.charCodeAt(i) // 255 - 0
         const newLine = {
+          g: 7,
           x: lastLine.x + state.specifics.G7.spotSize * (state.specifics.G7.dir === 1 ? 1 : -1),
           y: lastLine.y,
           z: lastLine.z,
@@ -180,8 +163,7 @@ export default function makeHandlers (params) {
           e: lastLine.e,
           f: lastLine.f,
           s: intensity,
-          t: lastLine.t,
-          g7: true
+          t: lastLine.t
         }
         addLineSegment(state, args, lastLine, newLine)
         state.lastLine = newLine
@@ -213,7 +195,7 @@ export default function makeHandlers (params) {
       // like toolhead, axes, grid, and extent labels are scaled correctly
       // later on when they are drawn after the gcode is rendered
       // console.log("SETTING UNITS TO INCHES!!!")
-      state.isUnitsMm = false // false means inches cuz default is mm
+      state.unitsMm = false // false means inches cuz default is mm
       addFakeSegment(state, args)
     },
 
@@ -222,7 +204,7 @@ export default function makeHandlers (params) {
       // Example: G21
       // Units from now on are in millimeters. (This is the RepRap default.)
       // console.log("SETTING UNITS TO MM!!!")
-      state.isUnitsMm = true // true means mm
+      state.unitsMm = true
       addFakeSegment(state, args)
     },
 
@@ -323,8 +305,6 @@ export default function makeHandlers (params) {
     },
 
     'default': function (state, args, index) {
-      // if (!args.isComment)
-      //    console.log('Unknown command:', args.cmd, args, info)
       addFakeSegment(state, args)
     }
   }

@@ -4,13 +4,14 @@ export default function makeBaseState (gcode, indexMax) {
 
     tool: null,
     relative: false,
-    isUnitsMm: true,
+    unitsMm: true,
 
     lineObjects: {
       lines: [],
       nLines: 0,
       name: 'LineObjects'
     },
+    linesData: [],
 
     extraObjects: {// these are extra Object3D elements added during
     // the gcode rendering to attach to scene

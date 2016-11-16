@@ -5,7 +5,6 @@ export default function parseLine (state, handlers, text, index) {
   if (text.match(/^N/i)) { // remove line numbers if exist
     text = text.replace(/^N\d+\s*/ig, '') // yes, there's a line num
   }
-
   const isG7 = text.match(/^G7/) // Is is G7 raster command?
   const baseParse = isG7 ? parseRaster(text, origtext) : parseDefault(text, origtext)
   const isComment = baseParse.isComment
@@ -137,10 +136,10 @@ function adaptUnitsAndFeedrateForHandler (args, state) {
   // of the line.
   if (args.text.match(/\bG20\b/i)) {
     console.log('SETTING UNITS TO INCHES from pre-parser!!!')
-    state.isUnitsMm = false // false means inches cuz default is mm
+    state.unitsMm = false // false means inches cuz default is mm
   } else if (args.text.match(/\bG21\b/i)) {
     console.log('SETTING UNITS TO MM!!! from pre-parser')
-    state.isUnitsMm = true // true means mm
+    state.unitsMm = true // true means mm
   }
 
   if (args.text.match(/F([\d.]+)/i)) { // scan for feedrate
