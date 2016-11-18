@@ -12,6 +12,7 @@ export default function makeBaseState (gcode, indexMax) {
       name: 'LineObjects'
     },
     linesData: [],
+    linesDataOffset:0,
 
     extraObjects: {// these are extra Object3D elements added during
     // the gcode rendering to attach to scene
@@ -101,6 +102,9 @@ export default function makeBaseState (gcode, indexMax) {
       children: []
     }
   }
+  //we prepare the storage for data
+  //we have 9 components : [g, x, y, z, e, f, s, t]
+  state.linesData.push(new Float32Array(9 * state.bufSize * 2))
 
   // we have been using an approach where we just append
   // each gcode move to one monolithic geometry. we

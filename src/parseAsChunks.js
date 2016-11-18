@@ -5,8 +5,6 @@ function now () {
 }
 
 export default function parseAsChunks (state, handlers, gcode, doneCallback) {
-  const {lineObjects, laserxmax, laserymax} = state
-
   const lines = gcode.split(/\r{0,1}\n/)
   const count = lines.length
   const maxTimePerChunk = 500
