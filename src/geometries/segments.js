@@ -265,56 +265,62 @@ export function addLineSegment (state, args, p1, p2) {
   if(state.debug) {
     console.log('addLineSegment')
   }
-  let {lineObject, lasermultiply, bufSize} = state
-  let i = lineObject.nLines * 6
-  i = state.linesDataOffset
+  let {linesData, lineObject, lasermultiply, bufSize} = state
+  //let i = lineObject.nLines * 6
+  let i = state.linesDataOffset
 
   if (p1.a !== 0 || p2.a !== 0) { // A axis: rotate around X
     const R1 = Math.sqrt(p1.y * p1.y + p1.z * p1.z)
     const R2 = Math.sqrt(p2.y * p2.y + p2.z * p2.z)
     const a1 = p1.y === 0 ? Math.sign(p1.z) * 90 : Math.atan2(p1.z, p1.y) * 180.0 / Math.PI
     const a2 = p2.y === 0 ? Math.sign(p2.z) * 90 : Math.atan2(p2.z, p2.y) * 180.0 / Math.PI
-    /*lineObject.positions[i + 0] = p1.x
-    lineObject.positions[i + 1] = R1 * Math.cos((-p1.a + a1) * Math.PI / 180.0)
-    lineObject.positions[i + 2] = R1 * Math.sin((-p1.a + a1) * Math.PI / 180.0)
-    lineObject.positions[i + 3] = p2.x
-    lineObject.positions[i + 4] = R2 * Math.cos((-p2.a + a2) * Math.PI / 180.0)
-    lineObject.positions[i + 5] = R2 * Math.sin((-p2.a + a2) * Math.PI / 180.0)*/
 
-    //FIXME: new structure should be G,X,Y,Z,E,F,S,T
-    lineObject.positions[i + 0] = p1.g
-    lineObject.positions[i + 1] = p1.x
-    lineObject.positions[i + 2] = R1 * Math.cos((-p1.a + a1) * Math.PI / 180.0)
-    lineObject.positions[i + 3] = R1 * Math.sin((-p1.a + a1) * Math.PI / 180.0)
-    lineObject.positions[i + 4] = p1.e
-    lineObject.positions[i + 5] = p1.f
-    lineObject.positions[i + 6] = p1.a
-    lineObject.positions[i + 7] = p1.s
-    lineObject.positions[i + 8] = p1.t
+    linesData[i + 0] = p1.g
+    linesData[i + 1] = p1.x
+    linesData[i + 2] = R1 * Math.cos((-p1.a + a1) * Math.PI / 180.0)
+    linesData[i + 3] = R1 * Math.sin((-p1.a + a1) * Math.PI / 180.0)
+    linesData[i + 4] = p1.e
+    linesData[i + 5] = p1.f
+    linesData[i + 6] = p1.a
+    linesData[i + 7] = p1.s
+    linesData[i + 8] = p1.t
+
+    linesData[i + 9] = p2.g
+    linesData[i + 10] = p2.x
+    linesData[i + 11] = R2 * Math.cos((-p2.a + a2) * Math.PI / 180.0)
+    linesData[i + 12] = R2 * Math.sin((-p2.a + a2) * Math.PI / 180.0)
+    linesData[i + 13] = p2.e
+    linesData[i + 14] = p2.f
+    linesData[i + 15] = p2.a
+    linesData[i + 16] = p2.s
+    linesData[i + 17] = p2.t
 
   } else {
-    lineObject.positions[i + 0] = p1.g
-    lineObject.positions[i + 1] = p1.x // positions
-    lineObject.positions[i + 2] = p1.y
-    lineObject.positions[i + 3] = p1.z
-    lineObject.positions[i + 4] = p1.e
-    lineObject.positions[i + 5] = p1.f
-    lineObject.positions[i + 6] = p1.a
-    lineObject.positions[i + 7] = p1.s
-    lineObject.positions[i + 8] = p1.t
+    linesData[i + 0] = p1.g
+    linesData[i + 1] = p1.x // positions
+    linesData[i + 2] = p1.y
+    linesData[i + 3] = p1.z
+    linesData[i + 4] = p1.e
+    linesData[i + 5] = p1.f
+    linesData[i + 6] = p1.a
+    linesData[i + 7] = p1.s
+    linesData[i + 8] = p1.t
 
-    /*
-    lineObject.positions[i + 0] = p1.x // positions
-    lineObject.positions[i + 1] = p1.y
-    lineObject.positions[i + 2] = p1.z
-    lineObject.positions[i + 3] = p2.x
-    lineObject.positions[i + 4] = p2.y
-    lineObject.positions[i + 5] = p2.z*/
+    linesData[i + 9] = p2.g
+    linesData[i + 10] = p2.x
+    linesData[i + 11] = p2.y
+    linesData[i + 12] = p2.z
+    linesData[i + 13] = p2.e
+    linesData[i + 14] = p2.f
+    linesData[i + 15] = p2.a
+    linesData[i + 16] = p2.s
+    linesData[i + 17] = p2.t
   }
   // console.log("Segment " + p1)
-  state.linesDataOffset += 9 // stride
+  state.linesDataOffset += 18 // stride
 
-  let color
+  //color : not used anymore (for now ?)
+  /*let color
   let intensity
   if (p2.g === 0) { // g0
     color = {r: 0, g: 1, b: 0}
@@ -341,7 +347,7 @@ export function addLineSegment (state, args, p1, p2) {
 
   if (lineObject.nLines === bufSize) {
     closeLineSegment(state)
-  }
+  }*/
 
   const dist = Math.sqrt((p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y) + (p1.z - p2.z) * (p1.z - p2.z))
   state.metrics.totalDist += dist

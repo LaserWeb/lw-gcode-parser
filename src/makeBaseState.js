@@ -12,7 +12,7 @@ export default function makeBaseState (gcode, indexMax) {
       name: 'LineObjects'
     },
     linesData: [],
-    linesDataOffset:0,
+    linesDataOffset: 0,
 
     extraObjects: {// these are extra Object3D elements added during
     // the gcode rendering to attach to scene
