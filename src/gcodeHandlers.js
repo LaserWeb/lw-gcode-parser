@@ -294,13 +294,13 @@ export default function makeHandlers (params) {
     // Dual Head 3D Printing Support
     T0: function (state, args) {
       // console.log('Found Tool: ', args)
-      lastLine.t = 0
+      state.lastLine.t = 0
       addFakeSegment(state, args)
     },
 
     T1: function (state, args) {
       // console.log('Found Tool: ', args)
-      lastLine.t = 1
+      state.lastLine.t = 1
       addFakeSegment(state, args)
     },
 
