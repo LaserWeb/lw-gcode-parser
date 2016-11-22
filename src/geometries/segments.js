@@ -1,8 +1,8 @@
 import { getLineGroup } from '../layers'
-import {drawArcFrom2PtsAndCenter} from './arcs'
+import { drawArcFrom2PtsAndCenter } from './arcs'
 
 export function addSegment (state, args, p1, p2) {
-  if(state.debug){
+  if (state.debug) {
     console.log('addSegment')
   }
   closeLineSegment(state)
@@ -151,8 +151,8 @@ export function addSegment (state, args, p1, p2) {
     // still push the normal p1/p2 point for debug
     p2.g2 = true
     p2.arcObj = arcObj
-    //MM_removed
-    //group = getLineGroup(p2, args)
+    // MM_removed
+    // group = getLineGroup(p2, args)
 
   // these golden lines showing start/end of a g2 or g3 arc were confusing people
   // so hiding them for now. jlauer 8/15/15
@@ -169,9 +169,9 @@ export function addSegment (state, args, p1, p2) {
     geometry.positions.push(p1.x, p1.y, p1.z)
     geometry.positions.push(p2.x, p2.y, p2.z)
 
-    /*MM_removed
-    geometry.colors.push(group.color)
-    geometry.colors.push(group.color)*/
+  /*MM_removed
+  geometry.colors.push(group.color)
+  geometry.colors.push(group.color)*/
   }
 
   if (p2.extruding) {
@@ -262,11 +262,20 @@ export function addFakeSegment (state, args) { // lineObject, lastLine, lines) {
 }
 
 export function addLineSegment (state, args, p1, p2) {
-  if(state.debug) {
+  if (state.debug) {
     console.log('addLineSegment')
   }
-  let {linesData, lineObject, lasermultiply, bufSize} = state
-  //let i = lineObject.nLines * 6
+  let {linesData, linesDataOffset, linesDataStride, bufSize} = state
+  /*if(linesDataOffset%linesDataStride>linesData){
+    linesData.push(new Float32Array(9 * bufSize * 2))
+  }*/
+  const chunkIndex = Math.ceil((linesDataOffset + linesDataStride) / bufSize) - 1
+  const curIndex = linesData.length / bufSize
+  //console.log('chunkIndex', chunkIndex, foo)
+  /*if (linesDataOffset + linesDataStride > bufSize) {
+    let tmp = linesDataStride new Float32Array(bufSize * linesDataStride)
+  }*/
+  // let i = lineObject.nLines * 6
   let i = state.linesDataOffset
 
   if (p1.a !== 0 || p2.a !== 0) { // A axis: rotate around X
@@ -294,7 +303,6 @@ export function addLineSegment (state, args, p1, p2) {
     linesData[i + 15] = p2.a
     linesData[i + 16] = p2.s
     linesData[i + 17] = p2.t
-
   } else {
     linesData[i + 0] = p1.g
     linesData[i + 1] = p1.x // positions
@@ -319,8 +327,9 @@ export function addLineSegment (state, args, p1, p2) {
   // console.log("Segment " + p1)
   state.linesDataOffset += 18 // stride
 
+  /*MM_removed
   //color : not used anymore (for now ?)
-  /*let color
+  let color
   let intensity
   if (p2.g === 0) { // g0
     color = {r: 0, g: 1, b: 0}
@@ -356,7 +365,7 @@ export function addLineSegment (state, args, p1, p2) {
 }
 
 export function closeLineSegment ({debug, lineObject, lineObjects}) {
-  if(debug){
+  if (debug) {
     console.log('closeLineSegment', lineObject.nLines)
   }
   if (lineObject.nLines === 0) {
