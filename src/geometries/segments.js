@@ -266,15 +266,16 @@ export function addLineSegment (state, args, p1, p2) {
     console.log('addLineSegment')
   }
   let {linesData, linesDataOffset, linesDataStride, bufSize} = state
-  /*if(linesDataOffset%linesDataStride>linesData){
-    linesData.push(new Float32Array(9 * bufSize * 2))
-  }*/
-  const chunkIndex = Math.ceil((linesDataOffset + linesDataStride) / bufSize) - 1
-  const curIndex = linesData.length / bufSize
-  //console.log('chunkIndex', chunkIndex, foo)
-  /*if (linesDataOffset + linesDataStride > bufSize) {
-    let tmp = linesDataStride new Float32Array(bufSize * linesDataStride)
-  }*/
+
+  //to store the next batch of data we need this many chunks
+  const chunkIndex = Math.ceil((linesDataOffset + linesDataStride) / bufSize)
+  const chunksNb = linesData.length / bufSize
+  if (chunkIndex > chunksNb) { // resize data to fit new entries
+    //console.log('resizing')
+    let resizedLinesData = new Float32Array(state.bufSize * chunkIndex)
+    resizedLinesData.set(linesData, 0)
+    linesData = state.linesData = resizedLinesData
+  }
   // let i = lineObject.nLines * 6
   let i = state.linesDataOffset
 
