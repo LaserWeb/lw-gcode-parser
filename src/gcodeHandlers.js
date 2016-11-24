@@ -242,8 +242,7 @@ export default function makeHandlers (params) {
       // No physical motion will occur.
 
       // TODO: Only support E0
-      var newLine = state.lastLine
-
+      let newLine = state.lastLine
       state.specifics.G92.offset.x = (args.x !== undefined ? (args.x === 0 ? newLine.x : newLine.x - args.x) : 0)
       state.specifics.G92.offset.y = (args.y !== undefined ? (args.y === 0 ? newLine.y : newLine.y - args.y) : 0)
       state.specifics.G92.offset.z = (args.z !== undefined ? (args.z === 0 ? newLine.z : newLine.z - args.z) : 0)

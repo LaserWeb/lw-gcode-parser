@@ -15,8 +15,6 @@ import makeBaseState from './makeBaseState'
 
 export default function parse (data, doneCallback) {
   // const params = Object.assign({}, machineDefaults, parameters)
-  console.log('Generating GCODE Preview')
-
   const handlers = makeHandlers()
   let state = makeBaseState()
 
