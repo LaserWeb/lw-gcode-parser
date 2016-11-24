@@ -1,6 +1,6 @@
 export default function makeBaseState (gcode, indexMax) {
   let state = {
-    debug: true,
+    debug: false,
 
     tool: null,
     relative: false,
@@ -15,6 +15,8 @@ export default function makeBaseState (gcode, indexMax) {
     linesData: [],
     linesDataOffset: 0,
     linesDataStride: 18,// each chunk of data is 18 (9x2) long
+    //we prepare the storage for data
+    //we have 9 components : [g, x, y, z, e, f, s, t], times 2
 
     extraObjects: {// these are extra Object3D elements added during
     // the gcode rendering to attach to scene
@@ -104,9 +106,6 @@ export default function makeBaseState (gcode, indexMax) {
       children: []
     }
   }
-  //we prepare the storage for data
-  //we have 9 components : [g, x, y, z, e, f, s, t], times 2
-  state.linesData.push(new Float32Array(9 * state.bufSize * 2))
 
   // we have been using an approach where we just append
   // each gcode move to one monolithic geometry. we
