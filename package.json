@@ -17,6 +17,7 @@
   "dependencies": {
   },
   "devDependencies": {
+    "lw-sample-files":"LaserWeb/lw-sample-files",
     "ava": "0.16",
     "babel-cli": "^6.6.5",
     "babel-core": "^6.2.1",
