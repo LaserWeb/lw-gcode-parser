@@ -29,3 +29,12 @@ test.cb('gcode parser: can parse multi material 3d printer gcode', t => {
     t.end()
   })
 })
+
+test.cb('gcode parser: can parse multi material 3d printer gcode (variant2)', t => {
+  const gcode = fs.readFileSync('../node_modules/lw-sample-files/gcode/Slicer Dual Example File loubie_aria_resculpt_base_and_eyes_v1.1.gcode', 'utf8')
+  parse(gcode, function (data) {
+    console.log('done with parsing', data.metrics)
+    t.deepEqual(data.linesData.length, 3537558)
+    t.end()
+  })
+})
