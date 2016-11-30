@@ -1,5 +1,5 @@
 export default function parseLine (state, handlers, text, index) {
-  console.log('Parsing: ', text)
+  //console.log('Parsing: ', text)
   const origtext = text
 
   if (text.match(/^N/i)) { // remove line numbers if exist

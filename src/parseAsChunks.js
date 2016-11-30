@@ -19,8 +19,6 @@ export default function parseAsChunks (state, handlers, gcode, doneCallback) {
       parseLine(state, handlers, lines[index], index)
       ++index
     }
-    // closeLineSegment() //FIXME : add this back .??? or not
-
     // console.log('done parsing ')
     if (index < count) {
       setTimeout(doChunk, 1) // set Timeout for async iteration
@@ -30,45 +28,11 @@ export default function parseAsChunks (state, handlers, gcode, doneCallback) {
       // cleanup , resize data typedArray to match actual data size
       state.linesData = state.linesData.subarray(0, state.linesDataOffset)
       doneCallback(state)
+
+      //TODO: deal with this ?
+      //object.translateX(laserxmax / 2 * -1)
+      //object.translateY(laserymax / 2 * -1)
     }
   }
-
-  doChunk()
-}
-
-// "old" for reference
-export function __parser (gcode, params, progressCallback, doneCallback) {
-  console.log('inside this.parse')
-  object = null
-  function doChunk () {
-    const progress = (index / count)
-    progressCallback(progress)
-
-    let startTime = now()
-    while (index < count && (now() - startTime) <= maxTimePerChunk) {
-      // console.log('parsing ' + lines[index])
-      parseLine(lines[index], index)
-      ++index
-    }
-    // closeLineSegment() //FIXME : add this back !!
-
-    // console.log('done parsing ')
-    if (index < count) {
-      setTimeout(doChunk, 1) // set Timeout for async iteration
-    // console.log('[GCODE PARSE] ' + (index / count ) * 100 + "%")
-    } else {
-      doneCallback()
-      object = drawobject()
-      object.add(lineObjects)
-      // console.log('Line Objects', lineObjects)
-      object.translateX(laserxmax / 2 * -1)
-      object.translateY(laserymax / 2 * -1)
-      object.name = 'object'
-      console.log('adding to scene')
-      scene.add(object)
-    }
-  }
-
-  // start it
   doChunk()
 }

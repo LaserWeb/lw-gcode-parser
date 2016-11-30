@@ -5,7 +5,7 @@ export function addSegment (state, args, p1, p2) {
   if (state.debug) {
     console.log('addSegment')
   }
-  closeLineSegment(state)
+  throw new Error('SEGMENT !!')
   let {bbox, bbox2} = state
   // console.log("")
   // console.log("addSegment p2:", p2)
@@ -247,7 +247,6 @@ export function addFakeSegment (state, args) { // lineObject, lastLine, lines) {
   if (state.debug) {
     console.log('addFakeSegment')
   }
-  closeLineSegment(state)
   // line.args = args
   const arg2 = {
     isFake: true,
